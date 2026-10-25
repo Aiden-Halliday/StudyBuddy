@@ -20,5 +20,8 @@ namespace StudyBuddy.Models
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedUtc { get; set; }
+
+
+        public ICollection<UserSkill> Skills { get; set; } = new List<UserSkill>();
     }
 }
