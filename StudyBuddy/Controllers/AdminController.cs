@@ -42,6 +42,13 @@ namespace StudyBuddy.Controllers
             var skills = await _context.Skills
                 .AsNoTracking()
                 .OrderBy(skill => skill.Name)
+                .Select(skill => new AdminSkillViewModel
+                {
+                    SkillId = skill.SkillId,
+                    Name = skill.Name,
+                    Description = skill.Description,
+                    IsActive = skill.IsActive
+                })
                 .ToListAsync();
 
             return View(skills);
@@ -51,7 +58,7 @@ namespace StudyBuddy.Controllers
         [HttpGet]
         public IActionResult CreateSkill()
         {
-            return View(new Skill());
+            return View(new CreateSkillViewModel());
         }
 
         // POST: /Admin/CreateSkill
@@ -79,9 +86,7 @@ namespace StudyBuddy.Controllers
             var skill = new Skill
             {
                 Name = name,
-                Description = string.IsNullOrWhiteSpace(model.Description)
-                    ? null
-                    : model.Description.Trim(),
+                Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim(),
                 IsActive = true
             };
 

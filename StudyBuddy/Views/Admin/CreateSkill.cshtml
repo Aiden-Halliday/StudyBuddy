@@ -1,4 +1,4 @@
-﻿@model StudyBuddy.Models.Skill
+﻿@model StudyBuddy.ViewModels.Admin.CreateSkillViewModel
 
 @{
     ViewData["Title"] = "Create Skill";
@@ -11,9 +11,7 @@
 
 <div class="row">
     <div class="col-md-4">
-        <form asp-controller="Admin"
-              asp-action="CreateSkill"
-              method="post">
+        <form asp-controller="Admin" asp-action="CreateSkill" method="post">
 
             @Html.AntiForgeryToken()
 
