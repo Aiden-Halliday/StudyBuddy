@@ -1,4 +1,6 @@
 ﻿
+using StudyBuddy.Models;
+
 namespace StudyBuddy.ViewModels.Profile
 {
     public class ProfileViewModel
@@ -10,5 +12,13 @@ namespace StudyBuddy.ViewModels.Profile
         public string? ProfileImageKey { get; set; }
 
         public DateTime CreatedUtc { get; set; }
+
+        public List<UserSkill> Skills { get; set; } = new();
+
+        public List<Skill> AvailableSkills { get; set; } = new();
+
+        public int SelectedSkillId { get; set; }
+
+        public SkillType Type { get; set; } = SkillType.Strength;
     }
 }
