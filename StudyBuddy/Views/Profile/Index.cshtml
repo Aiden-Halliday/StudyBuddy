@@ -65,7 +65,7 @@
                 @strength.Skill.Name
                 <form asp-controller="Profile" asp-action="RemoveSkill" method="post">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="userSkillId" value="Strength.UserSkillId" />
+                    <input type="hidden" name="userSkillId" value="@strength.UserSkillId" />
 
                     <button type="submit" class="btn btn-danger btn-sm">Remove</button>
                 </form>
@@ -84,7 +84,7 @@
                 @weakness.Skill.Name
                 <form asp-controller="Profile" asp-action="RemoveSkill" method="post">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="userSkillId" value="Weakness.UserSkillId" />
+                    <input type="hidden" name="userSkillId" value="@weakness.UserSkillId" />
 
                     <button type="submit" class="btn btn-danger btn-sm">Remove</button>
                 </form>
