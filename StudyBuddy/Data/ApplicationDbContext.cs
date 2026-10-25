@@ -11,5 +11,7 @@ public class ApplicationDbContext
     {
     }
 
-    public DbSet<UserSkill> UserSkills { get; set; }
+    public DbSet<Skill> Skills { get; set; } = null!;
+
+    public DbSet<UserSkill> UserSkills { get; set; } = null!;
 }

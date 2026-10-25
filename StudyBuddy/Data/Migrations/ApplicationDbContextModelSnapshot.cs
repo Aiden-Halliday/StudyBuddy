@@ -243,6 +243,31 @@ namespace StudyBuddy.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("StudyBuddy.Models.Skill", b =>
+                {
+                    b.Property<int>("SkillId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SkillId"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("SkillId");
+
+                    b.ToTable("Skills");
+                });
+
             modelBuilder.Entity("StudyBuddy.Models.UserSkill", b =>
                 {
                     b.Property<int>("UserSkillId")
@@ -251,10 +276,8 @@ namespace StudyBuddy.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserSkillId"));
 
-                    b.Property<string>("SkillName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int>("SkillId")
+                        .HasColumnType("int");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -264,6 +287,8 @@ namespace StudyBuddy.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("UserSkillId");
+
+                    b.HasIndex("SkillId");
 
                     b.HasIndex("UserId");
 
@@ -323,11 +348,19 @@ namespace StudyBuddy.Migrations
 
             modelBuilder.Entity("StudyBuddy.Models.UserSkill", b =>
                 {
+                    b.HasOne("StudyBuddy.Models.Skill", "Skill")
+                        .WithMany("UserSkills")
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("StudyBuddy.Models.ApplicationUser", "User")
                         .WithMany("Skills")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Skill");
 
                     b.Navigation("User");
                 });
@@ -335,6 +368,11 @@ namespace StudyBuddy.Migrations
             modelBuilder.Entity("StudyBuddy.Models.ApplicationUser", b =>
                 {
                     b.Navigation("Skills");
+                });
+
+            modelBuilder.Entity("StudyBuddy.Models.Skill", b =>
+                {
+                    b.Navigation("UserSkills");
                 });
 #pragma warning restore 612, 618
         }
