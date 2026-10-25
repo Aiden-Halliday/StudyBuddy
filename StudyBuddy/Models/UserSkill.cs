@@ -11,9 +11,9 @@ namespace StudyBuddy.Models
 
         public ApplicationUser User { get; set; } = null!;
 
-        [Required]
-        [StringLength(100)]
-        public string SkillName { get; set; } = string.Empty;
+        public int SkillId { get; set; }
+
+        public Skill Skill { get; set; } = null!;
 
         public SkillType Type { get; set; }
     }

@@ -1,17 +1,14 @@
 ﻿using StudyBuddy.Models;
-using System.ComponentModel.DataAnnotations;
 
-namespace StudyBuddy.ViewModels.Profile
+namespace StudyBuddy.ViewModels.Profile;
+
+public class ManageSkillsViewModel
 {
-    public class ManageSkillsViewModel
-    {
-        [Required]
-        [StringLength(100)]
-        [Display(Name = "Skill name")]
-        public string SkillName { get; set; } = string.Empty;
+    public int SelectedSkillId { get; set; }
 
-        public SkillType Type { get; set; } = SkillType.Strength;
+    public SkillType Type { get; set; } = SkillType.Strength;
 
-        public List<UserSkill> Skills { get; set; } = new();
-    }
+    public List<UserSkill> Skills { get; set; } = new();
+
+    public List<Skill> AvailableSkills { get; set; } = new();
 }

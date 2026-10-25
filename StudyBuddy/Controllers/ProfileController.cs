@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using StudyBuddy.Data;
 using StudyBuddy.Models;
 using StudyBuddy.ViewModels.Profile;
 
@@ -10,10 +12,12 @@ namespace StudyBuddy.Controllers;
 public class ProfileController : Controller
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _context;
 
-    public ProfileController(UserManager<ApplicationUser> userManager)
+    public ProfileController(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
     {
         _userManager = userManager;
+        _context = context;
     }
 
     // GET: /Profile
@@ -37,9 +41,8 @@ public class ProfileController : Controller
         return View(model);
     }
 
-    // GET: /Profile/Edit
     [HttpGet]
-    public async Task<IActionResult> Edit()
+    public async Task<IActionResult> Skills()
     {
         var user = await _userManager.GetUserAsync(User);
 
@@ -48,50 +51,20 @@ public class ProfileController : Controller
             return NotFound();
         }
 
-        var model = new EditProfileViewModel
+        var model = new ManageSkillsViewModel
         {
-            DisplayName = user.DisplayName,
-            Bio = user.Bio
+            Skills = await _context.UserSkills
+                .Include(us => us.Skill)
+                .Where(us => us.UserId == user.Id)
+                .OrderBy(us => us.Skill.Name)
+                .ToListAsync(),
+
+            AvailableSkills = await _context.Skills
+                .Where(s => s.IsActive)
+                .OrderBy(s => s.Name)
+                .ToListAsync()
         };
 
         return View(model);
-    }
-
-    // POST: /Profile/Edit
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(EditProfileViewModel model)
-    {
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
-
-        var user = await _userManager.GetUserAsync(User);
-
-        if (user == null)
-        {
-            return NotFound();
-        }
-
-        user.DisplayName = model.DisplayName;
-        user.Bio = model.Bio;
-        user.UpdatedUtc = DateTime.UtcNow;
-
-        var result = await _userManager.UpdateAsync(user);
-
-        if (!result.Succeeded)
-        {
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
-
-            return View(model);
-        }
-
-        TempData["SuccessMessage"] = "Your profile has been updated.";
-
-        return RedirectToAction(nameof(Index));
     }
 }
