@@ -25,14 +25,15 @@ namespace StudyBuddy.Controllers
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
-            var otherUsers = await _context.Users
-            .Where(u => u.Id != user.Id)
-            .ToListAsync();
-
+            
             if (user == null)
             {
                 return NotFound();
             }
+
+            var otherUsers = await _context.Users
+            .Where(u => u.Id != user.Id)
+            .ToListAsync();
 
             var models = new List<SearchViewModel>();
 
@@ -41,10 +42,10 @@ namespace StudyBuddy.Controllers
                 var compatibilityResult = _compatibilityService.Calculate(user.Skills, otherUser.Skills);
                 var model = new SearchViewModel
                 {
-                    DisplayName = user.DisplayName,
+                    DisplayName = otherUser.DisplayName,
                     Skills = await _context.UserSkills
                     .Include(us => us.Skill)
-                    .Where(us => us.UserId == user.Id)
+                    .Where(us => us.UserId == otherUser.Id)
                     .OrderBy(us => us.Skill.Name)
                     .ToListAsync(),
                     Score = compatibilityResult.Score
