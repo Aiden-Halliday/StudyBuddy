@@ -25,35 +25,48 @@ namespace StudyBuddy.Controllers
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
-            
+
             if (user == null)
             {
                 return NotFound();
             }
 
+            var userSkills = await _context.UserSkills
+                .Include(us => us.Skill)
+                .Where(us => us.UserId == user.Id)
+                .OrderBy(us => us.Skill.Name)
+                .ToListAsync();
+
             var otherUsers = await _context.Users
-            .Where(u => u.Id != user.Id)
-            .ToListAsync();
+                .Where(u => u.Id != user.Id)
+                .ToListAsync();
 
             var models = new List<SearchViewModel>();
 
             foreach (var otherUser in otherUsers)
             {
-                var compatibilityResult = _compatibilityService.Calculate(user.Skills, otherUser.Skills);
-                var model = new SearchViewModel
-                {
-                    DisplayName = otherUser.DisplayName,
-                    Skills = await _context.UserSkills
+                var otherUserSkills = await _context.UserSkills
                     .Include(us => us.Skill)
                     .Where(us => us.UserId == otherUser.Id)
                     .OrderBy(us => us.Skill.Name)
-                    .ToListAsync(),
+                    .ToListAsync();
+
+                var compatibilityResult = _compatibilityService.Calculate(userSkills, otherUserSkills);
+
+                var model = new SearchViewModel
+                {
+                    DisplayName = otherUser.DisplayName,
+                    Skills = otherUserSkills,
                     Score = compatibilityResult.Score
                 };
 
                 models.Add(model);
             }
-            models = models.OrderByDescending(m => m.Score).ToList();
+
+            models = models
+                .OrderByDescending(m => m.Score)
+                .ToList();
+
             return View(models);
         }
     }
