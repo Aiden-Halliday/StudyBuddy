@@ -15,3 +15,4 @@ Owen DeHaan | ocdehaan@lakeheadu.ca
 
 Aiden Halliday | ashallid@lakeheadu.ca
 
+Royalpriest Babalola | ribabalo@lakeheadu.ca 

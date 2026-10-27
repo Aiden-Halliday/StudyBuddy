@@ -50,6 +50,8 @@ builder.Services.AddScoped<CloudflareR2Service>(sp =>
         sp.GetRequiredService<IAmazonS3>(),
         sp.GetRequiredService<IConfiguration>()));
 
+builder.Services.AddScoped<CompatibilityService>();
+
 var app = builder.Build();
 
 
