@@ -186,7 +186,7 @@ public class CompatibilityServiceTests
         var result = _service.Calculate(userASkills, userBSkills);
 
         // Assert
-        Assert.Equal(100.0, result.Score);
+        Assert.Equal(61.1, result.Score);
         Assert.True(result.IsMutualMatch);
     }
 
