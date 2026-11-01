@@ -4,40 +4,46 @@
     ViewData["Title"] = "Create Skill";
 }
 
-<h1>Create Skill</h1>
-
-<h4>Skill</h4>
-<hr />
-
-<div class="row">
-    <div class="col-md-4">
-        <form asp-controller="Admin" asp-action="CreateSkill" method="post">
-
-            @Html.AntiForgeryToken()
-
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="form-group">
-                <label asp-for="Name" class="control-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Description" class="control-label"></label>
-                <textarea asp-for="Description" class="form-control"></textarea>
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mt-3">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<div class="container mt-4">
+    <div class="mb-4">
+        <h2 class="mb-1">Create Skill</h2>
+        <p class="text-muted mb-0"> Add a new preset skill that users can select for their profiles.</p>
     </div>
-</div>
 
-<div>
-    <a asp-controller="Admin" asp-action="Skills">Back to List</a>
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white py-3">
+            <h5 class="mb-0">Skill Details</h5>
+        </div>
+
+        <div class="card-body p-4">
+            <form asp-controller="Admin" asp-action="CreateSkill" method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label fw-semibold"></label>
+                    <input asp-for="Name" class="form-control" placeholder="Enter skill name" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Description" class="form-label fw-semibold"></label>
+                    <textarea asp-for= "Description"class="form-control" rows="4" placeholder="Provide a brief description of this skill"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> Create Skill
+                    </button>
+
+                    <a asp-controller="Admin" asp-action="Skills" class="btn btn-outline-secondary"> Cancel </a>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

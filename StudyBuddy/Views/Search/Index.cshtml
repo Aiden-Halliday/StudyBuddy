@@ -1,34 +1,99 @@
 ﻿@model IEnumerable<StudyBuddy.ViewModels.Search.SearchViewModel>
+
 @{
     ViewData["Title"] = "Search";
 }
 
-<h1>@ViewData["Title"]</h1>
-
 <div class="container mt-4">
-    <ol class="list-group list-group-numbered">
-        @foreach (var user in Model)
-        {
-            <li class="list-group-item p-3">
-                Display Name: @user.DisplayName
-                Compatibility Score: @user.Score
-                Strengths:
-                @foreach (var userSkills in user.Skills)
-                {
-                    if (userSkills.Type == SkillType.Strength)
-                    {
-                        <span class="me-1">@userSkills.Skill.Name</span>
-                    }
-                }
-                Weaknesses:
-                @foreach (var userSkills in user.Skills)
-                {
-                    if (userSkills.Type == SkillType.Weakness)
-                    {
-                        <span class="me-1">@userSkills.Skill.Name</span>
-                    }
-                }
-            </li>
-        }
-    </ol>
+    <div class="mb-4">
+        <h2 class="mb-1">Find Study Partners</h2>
+        <p class="text-muted mb-0">
+            Discover students based on shared strengths and complementary skills.
+        </p>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="row g-4">
+            @foreach (var user in Model)
+            {
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body p-4">
+
+                            <div class="d-flex justify-content-between align-items-start mb-4">
+                                <div>
+                                    <h4 class="card-title mb-1">@user.DisplayName</h4>
+                                    <span class="text-muted small">Title Placeholder</span>
+                                </div>
+
+                                <div class="text-center bg-light rounded p-3">
+                                    <h3 class="text-primary mb-0">@user.Score%</h3>
+                                    <small class="text-muted">Compatibility</small>
+                                </div>
+                            </div>
+
+                            <hr />
+
+                            <div class="mb-3">
+                                <h6 class="fw-semibold text-success mb-2">
+                                    <i class="bi bi-check-circle-fill me-1"></i>
+                                    Strengths
+                                </h6>
+
+                                @if (user.Skills.Any(s => s.Type == SkillType.Strength))
+                                {
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach (var skill in user.Skills.Where(s => s.Type == SkillType.Strength))
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle p-2">
+                                                @skill.Skill.Name
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">No strengths listed.</span>
+                                }
+                            </div>
+
+                            <div>
+                                <h6 class="fw-semibold text-danger mb-2">
+                                    <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                    Weaknesses
+                                </h6>
+
+                                @if (user.Skills.Any(s => s.Type == SkillType.Weakness))
+                                {
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach (var skill in user.Skills.Where(s => s.Type == SkillType.Weakness))
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle p-2">
+                                                @skill.Skill.Name
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">No weaknesses listed.</span>
+                                }
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm text-center p-5">
+            <h5>No other students found</h5>
+            <p class="text-muted mb-0">
+                There are currently no other students to match with.
+            </p>
+        </div>
+    }
 </div>
