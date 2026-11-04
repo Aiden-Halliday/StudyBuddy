@@ -12,18 +12,8 @@
         </p>
     </div>
 
-    <div class="d-flex gap-2 mb-4">
-        <a asp-controller="Friend"
-           asp-action="Index"
-           class="btn btn-primary">
-            My Friends
-        </a>
-
-        <a asp-controller="Friend"
-           asp-action="Requests"
-           class="btn btn-outline-primary">
-            Friend Requests
-        </a>
+    <div class="d-flex gap-2 mb-4"> <a asp-controller="Friend" asp-action="Index" class="btn btn-primary">My Friends</a>
+        <a asp-controller="Friend" asp-action="Requests" class="btn btn-outline-primary">Friend Requests</a>
     </div>
 
     @if (TempData["Success"] != null)
