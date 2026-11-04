@@ -16,3 +16,11 @@ Owen DeHaan | ocdehaan@lakeheadu.ca
 Aiden Halliday | ashallid@lakeheadu.ca
 
 Royalpriest Babalola | ribabalo@lakeheadu.ca 
+
+
+## How to Run
+
+The live server can be accessed at: https://studybuddyproject.runasp.net/
+
+Tests can be run by doing:
+Test → Test Explorer → Run All, or `dotnet test` from the solution folder.
