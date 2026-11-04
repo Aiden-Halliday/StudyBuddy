@@ -19,6 +19,25 @@ public class FriendController : Controller
         _userManager = userManager;
     }
 
+    public async Task<IActionResult> Index()
+    {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var friends = await _context.FriendRequests
+            .Where(fr =>
+                fr.Status == FriendRequestStatus.Accepted &&
+                (fr.SenderId == user.Id || fr.ReceiverId == user.Id))
+            .Select(fr => fr.SenderId == user.Id ? fr.Receiver : fr.Sender)
+            .OrderBy(friend => friend.DisplayName)
+            .ToListAsync();
+
+        return View(friends);
+    }
     public async Task<IActionResult> Requests()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -99,5 +118,38 @@ public class FriendController : Controller
         TempData["Success"] = "Friend request rejected.";
 
         return RedirectToAction(nameof(Requests));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveFriend(string id)
+    {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var friendship = await _context.FriendRequests
+            .FirstOrDefaultAsync(fr =>
+                fr.Status == FriendRequestStatus.Accepted &&
+                (
+                    (fr.SenderId == user.Id && fr.ReceiverId == id) ||
+                    (fr.ReceiverId == user.Id && fr.SenderId == id)
+                ));
+
+        if (friendship == null)
+        {
+            return NotFound();
+        }
+
+        _context.FriendRequests.Remove(friendship);
+
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Friend removed successfully.";
+
+        return RedirectToAction(nameof(Index));
     }
 }

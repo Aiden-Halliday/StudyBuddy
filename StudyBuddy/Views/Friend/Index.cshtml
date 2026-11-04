@@ -1,0 +1,73 @@
+﻿@model IEnumerable<StudyBuddy.Models.ApplicationUser>
+
+@{
+    ViewData["Title"] = "My Friends";
+}
+
+<div class="container mt-4">
+    <div class="mb-4">
+        <h2>My Friends</h2>
+        <p class="text-muted">View and manage your StudyBuddy friends.</p>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+        <a asp-controller="Friend" asp-action="Index" class="btn btn-primary">My Friends</a>
+
+        <a asp-controller="Friend" asp-action="Requests" class="btn btn-outline-primary">Friend Requests</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <div class="row g-3">
+            @foreach (var friend in Model)
+            {
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <h5 class="card-title">
+                                @friend.DisplayName
+                            </h5>
+
+                            @if (!string.IsNullOrWhiteSpace(friend.Bio))
+                            {
+                                <p class="text-muted">
+                                    @friend.Bio
+                                </p>
+                            }
+
+                            <form asp-action="RemoveFriend"asp-route-id="@friend.Id" method="post" onsubmit="return confirm('Are you sure you want to remove this friend?');">
+
+                                @Html.AntiForgeryToken()
+
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-person-dash"></i> Remove Friend
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm text-center p-5">
+            <h5>You don't have any friends yet.</h5>
+            <p class="text-muted mb-3">
+                Search for other StudyBuddy users and send them friend requests.
+            </p>
+
+            <div>
+                <a asp-controller="Search" asp-action="Index" class="btn btn-primary">Find Friends</a>
+            </div>
+        </div>
+    }
+</div>
