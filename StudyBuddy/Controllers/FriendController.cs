@@ -28,13 +28,18 @@ public class FriendController : Controller
             return NotFound();
         }
 
-        var friends = await _context.FriendRequests
+        var friendships = await _context.FriendRequests
+            .Include(fr => fr.Sender)
+            .Include(fr => fr.Receiver)
             .Where(fr =>
                 fr.Status == FriendRequestStatus.Accepted &&
                 (fr.SenderId == user.Id || fr.ReceiverId == user.Id))
+            .ToListAsync();
+
+        var friends = friendships
             .Select(fr => fr.SenderId == user.Id ? fr.Receiver : fr.Sender)
             .OrderBy(friend => friend.DisplayName)
-            .ToListAsync();
+            .ToList();
 
         return View(friends);
     }
