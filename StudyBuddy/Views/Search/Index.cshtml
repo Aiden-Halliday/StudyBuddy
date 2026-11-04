@@ -88,10 +88,16 @@
                                 }
                             </div>
 
-                            @if (user.HasSentRequest)
+                            @if (user.IsFriend)
+                            {
+                                <button type="button" class="btn btn-success w-100 mt-4" disabled>
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    Already Friends
+                                </button>
+                            }
+                            else if (user.HasSentRequest)
                             {
                                 <form asp-controller="Friend" asp-action="CancelRequest" asp-route-id="@user.UserId" method="post" class="mt-4">
-
                                     @Html.AntiForgeryToken()
 
                                     <button type="submit" class="btn btn-outline-danger w-100">
@@ -103,7 +109,6 @@
                             else
                             {
                                 <form asp-controller="Friend" asp-action="SendRequest" asp-route-id="@user.UserId" method="post" class="mt-4">
-
                                     @Html.AntiForgeryToken()
 
                                     <button type="submit" class="btn btn-primary w-100">
