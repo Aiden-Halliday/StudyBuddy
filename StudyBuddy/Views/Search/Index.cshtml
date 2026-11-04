@@ -4,6 +4,13 @@
     ViewData["Title"] = "Search";
 }
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 <div class="container mt-4">
     <div class="mb-4">
         <h2 class="mb-1">Find Study Partners</h2>
@@ -81,6 +88,30 @@
                                 }
                             </div>
 
+                            @if (user.HasSentRequest)
+                            {
+                                <form asp-controller="Friend" asp-action="CancelRequest" asp-route-id="@user.UserId" method="post" class="mt-4">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <button type="submit" class="btn btn-outline-danger w-100">
+                                        <i class="bi bi-x-circle me-1"></i>
+                                        Cancel Request
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-controller="Friend" asp-action="SendRequest" asp-route-id="@user.UserId" method="post" class="mt-4">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-person-plus me-1"></i>
+                                        Send Friend Request
+                                    </button>
+                                </form>
+                            }
                         </div>
                     </div>
                 </div>
@@ -91,9 +122,7 @@
     {
         <div class="card shadow-sm text-center p-5">
             <h5>No other students found</h5>
-            <p class="text-muted mb-0">
-                There are currently no other students to match with.
-            </p>
+            <p class="text-muted mb-0">There are currently no other students to match with.</p>
         </div>
     }
 </div>

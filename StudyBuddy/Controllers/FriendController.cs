@@ -157,4 +157,90 @@ public class FriendController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SendRequest(string id)
+    {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        // Prevent sending a request to yourself.
+        if (user.Id == id)
+        {
+            TempData["Error"] = "You cannot send a friend request to yourself.";
+            return RedirectToAction("Index", "Search");
+        }
+
+        var receiver = await _userManager.FindByIdAsync(id);
+
+        if (receiver == null)
+        {
+            return NotFound();
+        }
+
+        var existingRequest = await _context.FriendRequests
+            .AnyAsync(fr =>
+                (fr.SenderId == user.Id && fr.ReceiverId == id ||
+                 fr.SenderId == id && fr.ReceiverId == user.Id) &&
+                (fr.Status == FriendRequestStatus.Pending ||
+                 fr.Status == FriendRequestStatus.Accepted));
+
+        if (existingRequest)
+        {
+            TempData["Error"] = "A pending request or friendship already exists.";
+            return RedirectToAction("Index", "Search");
+        }
+
+        var request = new FriendRequest
+        {
+            SenderId = user.Id,
+            ReceiverId = id,
+            Status = FriendRequestStatus.Pending,
+            CreatedUtc = DateTime.UtcNow
+        };
+
+        _context.FriendRequests.Add(request);
+
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Friend request sent successfully.";
+
+        return RedirectToAction("Index", "Search");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CancelRequest(string id)
+    {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var request = await _context.FriendRequests
+            .FirstOrDefaultAsync(fr =>
+                fr.SenderId == user.Id &&
+                fr.ReceiverId == id &&
+                fr.Status == FriendRequestStatus.Pending);
+
+        if (request == null)
+        {
+            return NotFound();
+        }
+
+        _context.FriendRequests.Remove(request);
+
+        await _context.SaveChangesAsync();
+
+        TempData["Success"] = "Friend request cancelled.";
+
+        return RedirectToAction("Index", "Search");
+    }
 }
