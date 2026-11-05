@@ -69,5 +69,58 @@ namespace StudyBuddy.Controllers
 
             return View(models);
         }
+
+        public async Task<IActionResult> SearchBar(string searchBarInput)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            if (string.IsNullOrWhiteSpace(searchBarInput))
+            {
+                return RedirectToAction("Index");
+            }
+                
+            var userSkills = await _context.UserSkills
+                .Include(us => us.Skill)
+                .Where(us => us.UserId == user.Id)
+                .OrderBy(us => us.Skill.Name)
+                .ToListAsync();
+
+            var otherUsers = await _context.Users
+                .Where(u => u.Id != user.Id && u.DisplayName.Contains(searchBarInput))
+                .ToListAsync();
+
+            var models = new List<SearchViewModel>();
+
+            foreach (var otherUser in otherUsers)
+            {
+                var otherUserSkills = await _context.UserSkills
+                    .Include(us => us.Skill)
+                    .Where(us => us.UserId == otherUser.Id)
+                    .OrderBy(us => us.Skill.Name)
+                    .ToListAsync();
+
+                var compatibilityResult = _compatibilityService.Calculate(userSkills, otherUserSkills);
+
+                models.Add(new SearchViewModel
+                {
+                    DisplayName = otherUser.DisplayName,
+                    Skills = otherUserSkills,
+                    Score = compatibilityResult.Score
+                });
+            }
+
+            models = models
+                .OrderByDescending(m => m.Score)
+                .ToList();
+
+            ViewData["Query"] = searchBarInput;
+
+            return View("Index", models);
+        }
     }
 }

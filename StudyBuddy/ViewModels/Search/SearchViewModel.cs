@@ -10,5 +10,6 @@ namespace StudyBuddy.ViewModels.Search
         public List<UserSkill> Skills { get; set; } = new();
 
         public double Score { get; set; }
+
     }
 }
