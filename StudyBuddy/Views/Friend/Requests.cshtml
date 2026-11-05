@@ -1,0 +1,77 @@
+﻿@model IEnumerable<StudyBuddy.Models.FriendRequest>
+
+@{
+    ViewData["Title"] = "Friend Requests";
+}
+
+<div class="container mt-4">
+    <div class="mb-4">
+        <h2>Friend Requests</h2>
+        <p class="text-muted">
+            View and manage requests from other StudyBuddy users.
+        </p>
+    </div>
+
+    <div class="d-flex gap-2 mb-4"> <a asp-controller="Friend" asp-action="Index" class="btn btn-primary">My Friends</a>
+        <a asp-controller="Friend" asp-action="Requests" class="btn btn-outline-primary">Friend Requests</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <div class="row g-3">
+            @foreach (var request in Model)
+            {
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <h5 class="card-title">
+                                @request.Sender.DisplayName
+                            </h5>
+
+                            <p class="text-muted">
+                                Sent @request.CreatedUtc.ToString("MMM dd, yyyy")
+                            </p>
+
+                            <div class="d-flex gap-2">
+                                <form asp-action="AcceptRequest"
+                                      asp-route-id="@request.FriendRequestId"
+                                      method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        Accept
+                                    </button>
+                                </form>
+
+                                <form asp-action="RejectRequest"
+                                      asp-route-id="@request.FriendRequestId"
+                                      method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        Reject
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm text-center p-5">
+            <h5>No pending friend requests</h5>
+            <p class="text-muted mb-0">
+                When someone sends you a friend request, it will appear here.
+            </p>
+        </div>
+    }
+</div>

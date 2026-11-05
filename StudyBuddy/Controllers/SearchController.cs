@@ -31,6 +31,22 @@ namespace StudyBuddy.Controllers
                 return NotFound();
             }
 
+            var sentRequestUserIds = await _context.FriendRequests
+                .Where(fr =>
+                    fr.SenderId == user.Id &&
+                    fr.Status == FriendRequestStatus.Pending)
+                .Select(fr => fr.ReceiverId)
+                .ToListAsync();
+
+            var friendUserIds = await _context.FriendRequests
+                .Where(fr =>
+                    fr.Status == FriendRequestStatus.Accepted &&
+                    (fr.SenderId == user.Id || fr.ReceiverId == user.Id))
+                .Select(fr => fr.SenderId == user.Id
+                    ? fr.ReceiverId
+                    : fr.SenderId)
+                .ToListAsync();
+
             var userSkills = await _context.UserSkills
                 .Include(us => us.Skill)
                 .Where(us => us.UserId == user.Id)
@@ -51,13 +67,18 @@ namespace StudyBuddy.Controllers
                     .OrderBy(us => us.Skill.Name)
                     .ToListAsync();
 
-                var compatibilityResult = _compatibilityService.Calculate(userSkills, otherUserSkills);
+                var compatibilityResult = _compatibilityService.Calculate(
+                    userSkills,
+                    otherUserSkills);
 
                 var model = new SearchViewModel
                 {
+                    UserId = otherUser.Id,
                     DisplayName = otherUser.DisplayName,
                     Skills = otherUserSkills,
-                    Score = compatibilityResult.Score
+                    Score = compatibilityResult.Score,
+                    HasSentRequest = sentRequestUserIds.Contains(otherUser.Id),
+                    IsFriend = friendUserIds.Contains(otherUser.Id)
                 };
 
                 models.Add(model);
