@@ -15,9 +15,16 @@
     <div class="mb-4">
         <h2 class="mb-1">Find Study Partners</h2>
         <p class="text-muted mb-0">
-            Discover students based on shared strengths and complementary skills.
+            Discover students based on shared strengths and complementary skills, or search for a specific student.
         </p>
     </div>
+
+    <div>
+        <h3>Search for a student</h3>
+        <partial name="_SearchBar" />
+    </div>
+
+    <h3>@(ViewData["Query"] != null ? "Results" : "All students")</h3>
 
     @if (Model.Any())
     {
