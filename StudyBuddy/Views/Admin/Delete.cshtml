@@ -1,0 +1,60 @@
+﻿@model StudyBuddy.ViewModels.Admin.DeleteUserViewModel
+
+@{
+    ViewData["Title"] = "Delete Account";
+}
+
+<div class="container mt-4">
+    <h1 class="h2">Delete account</h1>
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+    }
+
+    <div class="alert alert-danger">
+        Permanently delete <strong>@Model.DisplayName</strong> (@Model.Email)?
+
+        This removes their profile, skill links, friend requests,
+        group memberships and sent messages.
+
+        Groups they created, including all members' messages in those groups,
+        are also deleted.
+
+        This cannot be undone. Their uploaded profile image may remain
+        in object storage.
+    </div>
+
+    <p>
+        Type
+        <strong>@(string.IsNullOrEmpty(Model.Email) ? Model.Id : Model.Email)</strong>
+        to confirm.
+    </p>
+
+    <form asp-action="Delete" method="post">
+        <input asp-for="Id" type="hidden" />
+
+        <div class="mb-3">
+            <label asp-for="Confirmation" class="form-label"></label>
+
+            <input asp-for="Confirmation"
+                   class="form-control"
+                   autocomplete="off" />
+
+            <span asp-validation-for="Confirmation"
+                  class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-danger">
+            Permanently delete account
+        </button>
+
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            Cancel
+        </a>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

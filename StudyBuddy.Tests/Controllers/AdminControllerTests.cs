@@ -10,8 +10,6 @@ namespace StudyBuddy.Tests.Controllers;
 
 public class AdminControllerTests
 {
-    // Each test class instance gets its own empty in-memory database,
-    // so tests never see each other's data.
     private readonly DbContextOptions<ApplicationDbContext> _options =
         new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -19,11 +17,8 @@ public class AdminControllerTests
 
     private ApplicationDbContext NewContext() => new(_options);
 
-    private AdminController NewController(ApplicationDbContext context) => new(context);
-
-    // ---------------------------------------------------------------
-    // Index (user list)
-    // ---------------------------------------------------------------
+    private AdminController NewController(ApplicationDbContext context) =>
+        new(context, null!);
 
     [Fact]
     public async Task Index_NoUsers_ReturnsViewWithEmptyList()
@@ -33,7 +28,9 @@ public class AdminControllerTests
         var result = await NewController(context).Index();
 
         var view = Assert.IsType<ViewResult>(result);
-        var model = Assert.IsAssignableFrom<List<AdminUserDisplayViewModel>>(view.Model);
+        var model =
+            Assert.IsAssignableFrom<List<AdminUserDisplayViewModel>>(view.Model);
+
         Assert.Empty(model);
     }
 
@@ -49,21 +46,29 @@ public class AdminControllerTests
         var result = await NewController(context).Index();
 
         var model = GetModel<List<AdminUserDisplayViewModel>>(result);
-        Assert.Equal(new[] { "Alice", "Bob", "Charlie" }, model.Select(u => u.DisplayName));
+
+        Assert.Equal(
+            new[] { "Alice", "Bob", "Charlie" },
+            model.Select(u => u.DisplayName));
     }
 
     [Fact]
     public async Task Index_MapsUserFieldsToViewModel()
     {
-        var created = new DateTime(2026, 9, 1, 12, 0, 0, DateTimeKind.Utc);
+        var created =
+            new DateTime(2026, 9, 1, 12, 0, 0, DateTimeKind.Utc);
+
         var user = NewUser("Alice", "alice@example.com");
         user.CreatedUtc = created;
+
         await SeedUsersAsync(user);
 
         using var context = NewContext();
         var result = await NewController(context).Index();
 
-        var row = Assert.Single(GetModel<List<AdminUserDisplayViewModel>>(result));
+        var row =
+            Assert.Single(GetModel<List<AdminUserDisplayViewModel>>(result));
+
         Assert.Equal(user.Id, row.Id);
         Assert.Equal("Alice", row.DisplayName);
         Assert.Equal("alice@example.com", row.Email);
@@ -78,13 +83,11 @@ public class AdminControllerTests
         using var context = NewContext();
         var result = await NewController(context).Index();
 
-        var row = Assert.Single(GetModel<List<AdminUserDisplayViewModel>>(result));
+        var row =
+            Assert.Single(GetModel<List<AdminUserDisplayViewModel>>(result));
+
         Assert.Equal(string.Empty, row.Email);
     }
-
-    // ---------------------------------------------------------------
-    // Skills (skill list)
-    // ---------------------------------------------------------------
 
     [Fact]
     public async Task Skills_NoSkills_ReturnsViewWithEmptyList()
@@ -108,35 +111,47 @@ public class AdminControllerTests
         var result = await NewController(context).Skills();
 
         var model = GetModel<List<AdminSkillViewModel>>(result);
-        Assert.Equal(new[] { "Biology", "Calculus", "Physics" }, model.Select(s => s.Name));
+
+        Assert.Equal(
+            new[] { "Biology", "Calculus", "Physics" },
+            model.Select(s => s.Name));
     }
 
     [Fact]
     public async Task Skills_IncludesInactiveSkills_AndMapsFields()
     {
         await SeedSkillsAsync(
-            new Skill { Name = "Calculus", Description = "Derivatives and integrals", IsActive = true },
-            new Skill { Name = "Latin", Description = null, IsActive = false });
+            new Skill
+            {
+                Name = "Calculus",
+                Description = "Derivatives and integrals",
+                IsActive = true
+            },
+            new Skill
+            {
+                Name = "Latin",
+                Description = null,
+                IsActive = false
+            });
 
         using var context = NewContext();
         var result = await NewController(context).Skills();
 
         var model = GetModel<List<AdminSkillViewModel>>(result);
+
         Assert.Equal(2, model.Count);
 
         var calculus = model.Single(s => s.Name == "Calculus");
+
         Assert.True(calculus.SkillId > 0);
         Assert.Equal("Derivatives and integrals", calculus.Description);
         Assert.True(calculus.IsActive);
 
         var latin = model.Single(s => s.Name == "Latin");
+
         Assert.Null(latin.Description);
         Assert.False(latin.IsActive);
     }
-
-    // ---------------------------------------------------------------
-    // CreateSkill (GET)
-    // ---------------------------------------------------------------
 
     [Fact]
     public void CreateSkill_Get_ReturnsViewWithEmptyViewModel()
@@ -146,18 +161,15 @@ public class AdminControllerTests
         var result = NewController(context).CreateSkill();
 
         var model = GetModel<CreateSkillViewModel>(result);
+
         Assert.Equal(string.Empty, model.Name);
         Assert.Null(model.Description);
     }
 
-    // ---------------------------------------------------------------
-    // CreateSkill (POST)
-    // ---------------------------------------------------------------
-
     [Fact]
     public async Task CreateSkill_Post_InvalidModelState_ReturnsView_AndSavesNothing()
     {
-        var input = new Skill { Name = "" };
+        var input = new CreateSkillViewModel { Name = "" };
 
         using (var context = NewContext())
         {
@@ -180,15 +192,24 @@ public class AdminControllerTests
         using (var context = NewContext())
         {
             var result = await NewController(context).CreateSkill(
-                new Skill { Name = "Calculus", Description = "Derivatives and integrals" });
+                new CreateSkillViewModel
+                {
+                    Name = "Calculus",
+                    Description = "Derivatives and integrals"
+                });
 
             var redirect = Assert.IsType<RedirectToActionResult>(result);
-            Assert.Equal(nameof(AdminController.Skills), redirect.ActionName);
+
+            Assert.Equal(
+                nameof(AdminController.Skills),
+                redirect.ActionName);
+
             Assert.Null(redirect.ControllerName);
         }
 
         using var check = NewContext();
         var saved = Assert.Single(check.Skills);
+
         Assert.Equal("Calculus", saved.Name);
         Assert.Equal("Derivatives and integrals", saved.Description);
     }
@@ -199,11 +220,16 @@ public class AdminControllerTests
         using (var context = NewContext())
         {
             await NewController(context).CreateSkill(
-                new Skill { Name = "  Calculus  ", Description = "  Limits  " });
+                new CreateSkillViewModel
+                {
+                    Name = "  Calculus  ",
+                    Description = "  Limits  "
+                });
         }
 
         using var check = NewContext();
         var saved = Assert.Single(check.Skills);
+
         Assert.Equal("Calculus", saved.Name);
         Assert.Equal("Limits", saved.Description);
     }
@@ -212,12 +238,17 @@ public class AdminControllerTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task CreateSkill_Post_BlankDescription_IsSavedAsNull(string? description)
+    public async Task CreateSkill_Post_BlankDescription_IsSavedAsNull(
+        string? description)
     {
         using (var context = NewContext())
         {
             await NewController(context).CreateSkill(
-                new Skill { Name = "Calculus", Description = description });
+                new CreateSkillViewModel
+                {
+                    Name = "Calculus",
+                    Description = description
+                });
         }
 
         using var check = NewContext();
@@ -225,13 +256,12 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task CreateSkill_Post_AlwaysSavesAsActive_EvenIfInputSaysInactive()
+    public async Task CreateSkill_Post_AlwaysSavesAsActive()
     {
-        // Guards against someone posting IsActive=false to create a hidden skill.
         using (var context = NewContext())
         {
             await NewController(context).CreateSkill(
-                new Skill { Name = "Calculus", IsActive = false });
+                new CreateSkillViewModel { Name = "Calculus" });
         }
 
         using var check = NewContext();
@@ -242,7 +272,8 @@ public class AdminControllerTests
     public async Task CreateSkill_Post_DuplicateName_ReturnsViewWithError_AndDoesNotSave()
     {
         await SeedSkillsAsync(new Skill { Name = "Calculus" });
-        var input = new Skill { Name = "Calculus" };
+
+        var input = new CreateSkillViewModel { Name = "Calculus" };
 
         using (var context = NewContext())
         {
@@ -251,11 +282,16 @@ public class AdminControllerTests
             var result = await controller.CreateSkill(input);
 
             var view = Assert.IsType<ViewResult>(result);
+
             Assert.Same(input, view.Model);
             Assert.False(controller.ModelState.IsValid);
 
-            var error = Assert.Single(controller.ModelState[nameof(Skill.Name)]!.Errors);
-            Assert.Equal("A skill with this name already exists.", error.ErrorMessage);
+            var error = Assert.Single(
+                controller.ModelState[nameof(Skill.Name)]!.Errors);
+
+            Assert.Equal(
+                "A skill with this name already exists.",
+                error.ErrorMessage);
         }
 
         using var check = NewContext();
@@ -269,7 +305,8 @@ public class AdminControllerTests
 
         using (var context = NewContext())
         {
-            var result = await NewController(context).CreateSkill(new Skill { Name = "  Calculus " });
+            var result = await NewController(context).CreateSkill(
+                new CreateSkillViewModel { Name = "  Calculus " });
 
             Assert.IsType<ViewResult>(result);
         }
@@ -278,26 +315,25 @@ public class AdminControllerTests
         Assert.Single(check.Skills);
     }
 
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
-
     private static T GetModel<T>(IActionResult result)
     {
         var view = Assert.IsType<ViewResult>(result);
         return Assert.IsAssignableFrom<T>(view.Model);
     }
 
-    private static ApplicationUser NewUser(string displayName, string? email) => new()
-    {
-        DisplayName = displayName,
-        Email = email,
-        UserName = email ?? displayName
-    };
+    private static ApplicationUser NewUser(
+        string displayName,
+        string? email) => new()
+        {
+            DisplayName = displayName,
+            Email = email,
+            UserName = email ?? displayName
+        };
 
     private async Task SeedUsersAsync(params ApplicationUser[] users)
     {
         using var context = NewContext();
+
         context.Users.AddRange(users);
         await context.SaveChangesAsync();
     }
@@ -305,6 +341,7 @@ public class AdminControllerTests
     private async Task SeedSkillsAsync(params Skill[] skills)
     {
         using var context = NewContext();
+
         context.Skills.AddRange(skills);
         await context.SaveChangesAsync();
     }
