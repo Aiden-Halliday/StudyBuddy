@@ -40,7 +40,24 @@
                                 </div>
                             </div>
 
-                            <hr />
+                            @if (!string.IsNullOrEmpty(user.ProfileImageKey))
+                            {
+                                <img src="@Url.Action("Image", "Profile",
+                                     new { userId = user.UserId })"
+                                     alt="@user.DisplayName's profile picture"
+                                     class="rounded-circle"
+                                     style="width: 75px; height: 75px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle bg-light border d-flex
+                                    align-items-center justify-content-center"
+                                     style="width: 75px; height: 75px;">
+                                    <i class="bi bi-person fs-3 text-secondary"></i>
+                                </div>
+                            }
+
+                            <hr />                         
 
                             <div class="mb-3">
                                 <h6 class="fw-semibold text-success mb-2">
