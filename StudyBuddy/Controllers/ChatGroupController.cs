@@ -284,7 +284,7 @@ namespace StudyBuddy.Controllers
 
             if (!isMember)
             {
-                return Forbid();
+                return NotFound();
             }
 
             var messages = await _context.ChatMessages

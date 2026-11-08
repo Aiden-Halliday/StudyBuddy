@@ -1,4 +1,5 @@
 using StudyBuddy.Services;
+using StudyBuddy.Hubs;
 using StudyBuddy.Data;
 using StudyBuddy.Models;
 using Amazon.S3;
@@ -60,6 +61,9 @@ builder.Services.AddScoped<CloudflareR2Service>(sp =>
 
 builder.Services.AddScoped<CompatibilityService>();
 
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IChatService, ChatService>();
+
 var app = builder.Build();
 
 // Integration tests initialize their isolated database separately.
@@ -90,6 +94,8 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapHub<ChatHub>("/chatHub");
 
 app.Run();
 
