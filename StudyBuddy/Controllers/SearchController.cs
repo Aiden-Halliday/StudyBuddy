@@ -75,6 +75,7 @@ namespace StudyBuddy.Controllers
                 {
                     UserId = otherUser.Id,
                     DisplayName = otherUser.DisplayName,
+                    ProfileImageKey = otherUser.ProfileImageKey,
                     Skills = otherUserSkills,
                     Score = compatibilityResult.Score,
                     HasSentRequest = sentRequestUserIds.Contains(otherUser.Id),
