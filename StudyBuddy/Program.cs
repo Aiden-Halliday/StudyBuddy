@@ -7,43 +7,51 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddControllersWithViews();
-
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
-
 
 builder.Services
     .AddDefaultIdentity<ApplicationUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
     })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+    options.ValidationInterval = TimeSpan.Zero);
 
-var r2 = builder.Configuration.GetSection("CloudflareR2");
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.Events.OnValidatePrincipal =
+        AdminIdentitySetup.ValidatePrincipalAsync;
+});
 
-var serviceUrl = r2["ServiceUrl"]
-    ?? throw new InvalidOperationException("R2 endpoint is missing.");
+builder.Services.AddScoped<AdminUserService>();
 
-var accessKey = r2["AccessKeyId"]
-    ?? throw new InvalidOperationException("R2 access key is missing.");
+// Upload configuration is resolved when storage is actually used.
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+{
+    var r2 = sp.GetRequiredService<IConfiguration>()
+        .GetSection("CloudflareR2");
 
-var secretKey = r2["SecretAccessKey"]
-    ?? throw new InvalidOperationException("R2 secret key is missing.");
-
-builder.Services.AddSingleton<IAmazonS3>(_ =>
-    new AmazonS3Client(
-        accessKey,
-        secretKey,
+    return new AmazonS3Client(
+        r2["AccessKeyId"]
+            ?? throw new InvalidOperationException("R2 access key is missing."),
+        r2["SecretAccessKey"]
+            ?? throw new InvalidOperationException("R2 secret key is missing."),
         new AmazonS3Config
         {
-            ServiceURL = serviceUrl,
+            ServiceURL = r2["ServiceUrl"]
+                ?? throw new InvalidOperationException("R2 endpoint is missing."),
             ForcePathStyle = true
-        }));
+        });
+});
 
 builder.Services.AddScoped<CloudflareR2Service>(sp =>
     new CloudflareR2Service(
@@ -54,6 +62,16 @@ builder.Services.AddScoped<CompatibilityService>();
 
 var app = builder.Build();
 
+// Integration tests initialize their isolated database separately.
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+
+    await AdminIdentitySetup.InitializeAsync(
+        scope.ServiceProvider,
+        app.Configuration,
+        app.Environment);
+}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -74,3 +92,6 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+// Allows WebApplicationFactory<Program> in integration tests.
+public partial class Program { }
