@@ -1,0 +1,130 @@
+﻿@model StudyBuddy.ViewModels.ChatGroup.ChatGroupDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Group.Name;
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="bi bi-people me-2"></i>
+                @Model.Group.Name
+            </h2>
+            <p class="text-muted">
+                Created by @Model.Group.CreatedBy.DisplayName
+            </p>
+        </div>
+
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            Back to Groups
+        </a>
+    </div>
+
+    <div class="row">
+
+        <!-- Messages -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+
+                <div class="card-header">
+                    <h5 class="mb-0">Group Chat</h5>
+                </div>
+
+                <div class="card-body" style="height: 450px; overflow-y: auto;">
+
+                    @if (!Model.Messages.Any())
+                    {
+                        <div class="text-center text-muted mt-5">
+                            <i class="bi bi-chat-dots fs-1"></i>
+                            <p class="mt-2">No messages yet. Start the conversation!</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var message in Model.Messages)
+                        {
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@message.Sender.DisplayName</strong>
+
+                                    <small class="text-muted">
+                                        @message.SentUtc.ToLocalTime().ToString("MMM dd, h:mm tt")
+                                    </small>
+                                </div>
+
+                                <div class="bg-light rounded p-3 mt-1">
+                                    @message.Content
+                                </div>
+                            </div>
+                        }
+                    }
+
+                </div>
+
+                <div class="card-footer">
+
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">
+                            @TempData["Error"]
+                        </div>
+                    }
+
+                    <form asp-action="SendMessage" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden"
+                               name="groupId"
+                               value="@Model.Group.ChatGroupId" />
+
+                        <div class="input-group">
+                            <textarea name="content"
+                                      class="form-control"
+                                      placeholder="Write a message..."
+                                      rows="2"
+                                      maxlength="2000"
+                                      required></textarea>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i>
+                                Send
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Members -->
+        <div class="col-lg-4 mt-3 mt-lg-0">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        Members (@Model.Group.Members.Count)
+                    </h5>
+                </div>
+
+                <div class="list-group list-group-flush">
+                    @foreach (var member in Model.Group.Members)
+                    {
+                        <div class="list-group-item">
+                            <i class="bi bi-person-circle me-2"></i>
+                            @member.User.DisplayName
+
+                            @if (member.UserId == Model.Group.CreatedByUserId)
+                            {
+                                <span class="badge bg-primary ms-2">
+                                    Creator
+                                </span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

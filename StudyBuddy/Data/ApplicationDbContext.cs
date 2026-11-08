@@ -40,6 +40,12 @@ public class ApplicationDbContext
             .HasForeignKey(fr => fr.ReceiverId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Entity<ChatGroup>()
+            .HasOne(g => g.CreatedBy)
+            .WithMany()
+            .HasForeignKey(g => g.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Entity<ChatGroupMember>()
             .HasIndex(m => new { m.ChatGroupId, m.UserId })
             .IsUnique();

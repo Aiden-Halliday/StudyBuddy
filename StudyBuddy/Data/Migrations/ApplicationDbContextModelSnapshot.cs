@@ -251,12 +251,9 @@ namespace StudyBuddy.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChatGroupId"));
 
-                    b.Property<string>("CreatedById")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("CreatedByUserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
@@ -267,7 +264,7 @@ namespace StudyBuddy.Migrations
 
                     b.HasKey("ChatGroupId");
 
-                    b.HasIndex("CreatedById");
+                    b.HasIndex("CreatedByUserId");
 
                     b.ToTable("ChatGroups");
                 });
@@ -469,7 +466,9 @@ namespace StudyBuddy.Migrations
                 {
                     b.HasOne("StudyBuddy.Models.ApplicationUser", "CreatedBy")
                         .WithMany()
-                        .HasForeignKey("CreatedById");
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("CreatedBy");
                 });
