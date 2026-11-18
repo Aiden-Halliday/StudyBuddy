@@ -31,20 +31,45 @@
             {
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm h-100">
+
                         <div class="card-body p-4">
-                            <h5 class="card-title">
-                                @request.Sender.DisplayName
-                            </h5>
+                            <div class="d-flex align-items-center gap-3 mb-3">
+
+                                @if (!string.IsNullOrEmpty(request.Sender.ProfileImageKey))
+                                {
+                                    <img src="@Url.Action("Image", "Profile",
+                                         new { userId = request.Sender.Id })"
+                                         alt="Profile picture of @request.Sender.DisplayName"
+                                         class="rounded-circle border"
+                                         style="width: 75px; height: 75px; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-light border d-flex
+                                        align-items-center justify-content-center"
+                                         style="width: 75px; height: 75px;">
+                                        <i class="bi bi-person fs-3 text-secondary"></i>
+                                    </div>
+                                }
+
+                                <h5 class="card-title mb-0">
+                                    @request.Sender.DisplayName
+                                </h5>
+
+                            </div>
 
                             <p class="text-muted">
                                 Sent @request.CreatedUtc.ToString("MMM dd, yyyy")
                             </p>
 
                             <div class="d-flex gap-2">
+
                                 <form asp-action="AcceptRequest"
                                       asp-route-id="@request.FriendRequestId"
                                       method="post">
+
                                     @Html.AntiForgeryToken()
+
                                     <button type="submit" class="btn btn-success btn-sm">
                                         Accept
                                     </button>
@@ -53,15 +78,20 @@
                                 <form asp-action="RejectRequest"
                                       asp-route-id="@request.FriendRequestId"
                                       method="post">
+
                                     @Html.AntiForgeryToken()
+
                                     <button type="submit" class="btn btn-danger btn-sm">
                                         Reject
                                     </button>
                                 </form>
+
                             </div>
+
                         </div>
-                    </div>
-                </div>
+
+                        </div>
+                    </div>                
             }
         </div>
     }

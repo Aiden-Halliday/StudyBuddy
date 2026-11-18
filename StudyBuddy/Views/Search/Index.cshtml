@@ -15,9 +15,16 @@
     <div class="mb-4">
         <h2 class="mb-1">Find Study Partners</h2>
         <p class="text-muted mb-0">
-            Discover students based on shared strengths and complementary skills.
+            Discover students based on shared strengths and complementary skills, or search for a specific student.
         </p>
     </div>
+
+    <div>
+        <h3>Search for a student</h3>
+        <partial name="_SearchBar" />
+    </div>
+
+    <h3>@(ViewData["Query"] != null ? "Results" : "All students")</h3>
 
     @if (Model.Any())
     {
@@ -40,7 +47,24 @@
                                 </div>
                             </div>
 
-                            <hr />
+                            @if (!string.IsNullOrEmpty(user.ProfileImageKey))
+                            {
+                                <img src="@Url.Action("Image", "Profile",
+                                     new { userId = user.UserId })"
+                                     alt="@user.DisplayName's profile picture"
+                                     class="rounded-circle"
+                                     style="width: 75px; height: 75px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle bg-light border d-flex
+                                    align-items-center justify-content-center"
+                                     style="width: 75px; height: 75px;">
+                                    <i class="bi bi-person fs-3 text-secondary"></i>
+                                </div>
+                            }
+
+                            <hr />                         
 
                             <div class="mb-3">
                                 <h6 class="fw-semibold text-success mb-2">

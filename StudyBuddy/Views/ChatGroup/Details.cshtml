@@ -1,0 +1,152 @@
+﻿@model StudyBuddy.ViewModels.ChatGroup.ChatGroupDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Group.Name;
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="bi bi-people me-2"></i>
+                @Model.Group.Name
+            </h2>
+            <p class="text-muted">
+                Created by @Model.Group.CreatedBy.DisplayName
+            </p>
+        </div>
+
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            Back to Groups
+        </a>
+    </div>
+
+    <div class="row">
+
+        <!-- Messages -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Group Chat</h5>
+                    <small id="connectionStatus" class="text-muted">
+                        Connecting...
+                    </small>
+                </div>
+
+                <div id="messageArea"
+                     class="card-body"
+                     style="height: 450px; overflow-y: auto;"
+                     data-group-id="@Model.Group.ChatGroupId">
+
+                    @if (!Model.Messages.Any())
+                    {
+                        <div id="emptyMessage" class="text-center text-muted mt-5">
+                            <i class="bi bi-chat-dots fs-1"></i>
+                            <p class="mt-2">No messages yet. Start the conversation!</p>
+                        </div>
+                    }
+
+                    @foreach (var message in Model.Messages)
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (!string.IsNullOrEmpty(message.Sender.ProfileImageKey))
+                                    {
+                                        <img src="@Url.Action("Image", "Profile",
+                                                             new { userId = message.SenderId })"
+                                     alt="@message.Sender.DisplayName"
+                                     class="rounded-circle"
+                                     style="width: 35px; height: 35px; object-fit: cover;" />
+                                                                }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-light border d-flex
+                                             align-items-center justify-content-center"
+                                             style="width: 35px; height: 35px;">
+                                            <i class="bi bi-person text-secondary"></i>
+                                        </div>
+                                    }
+
+                                    <strong>@message.Sender.DisplayName</strong>
+                                </div>
+
+                                <small class="text-muted">
+                                    @message.SentUtc.ToLocalTime().ToString("MMM dd, h:mm tt")
+                                </small>
+                            </div>
+
+                            <div class="bg-light rounded p-3 mt-1"
+                                 style="white-space: pre-wrap; overflow-wrap: anywhere;">
+                                @message.Content
+                            </div>
+                        </div>
+                    }
+
+                </div>
+
+                <div class="card-footer">
+
+                    <div id="messageError"
+                         class="alert alert-danger d-none">
+                    </div>
+
+                    <form id="messageForm">
+                        <div class="input-group">
+                            <textarea id="messageInput"
+                                      class="form-control"
+                                      placeholder="Write a message..."
+                                      rows="2"
+                                      maxlength="2000"
+                                      required></textarea>
+
+                            <button id="sendButton"
+                                    type="submit"
+                                    class="btn btn-primary">
+                                <i class="bi bi-send"></i>
+                                Send
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Members -->
+        <div class="col-lg-4 mt-3 mt-lg-0">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        Members (@Model.Group.Members.Count)
+                    </h5>
+                </div>
+
+                <div class="list-group list-group-flush">
+                    @foreach (var member in Model.Group.Members)
+                    {
+                        <div class="list-group-item">
+                            <i class="bi bi-person-circle me-2"></i>
+                            @member.User.DisplayName
+
+                            @if (member.UserId == Model.Group.CreatedByUserId)
+                            {
+                                <span class="badge bg-primary ms-2">
+                                    Creator
+                                </span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+    <script src="~/js/ChatGroup/Details.js" asp-append-version="true"></script>
+}

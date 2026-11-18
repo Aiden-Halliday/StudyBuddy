@@ -18,14 +18,19 @@ public class AccountController : Controller
         _signInManager = signInManager;
     }
 
-    // GET: /Account/Register
+    [HttpGet]
+    public IActionResult AccessDenied()
+    {
+        Response.StatusCode = StatusCodes.Status403Forbidden;
+        return View();
+    }
+
     [HttpGet]
     public IActionResult Register()
     {
         return View();
     }
 
-    // POST: /Account/Register
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(RegisterViewModel model)
@@ -57,14 +62,12 @@ public class AccountController : Controller
         return View(model);
     }
 
-    // GET: /Account/Login
     [HttpGet]
     public IActionResult Login()
     {
         return View(new LoginViewModel());
     }
 
-    // POST: /Account/Login
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)
@@ -93,7 +96,6 @@ public class AccountController : Controller
         return View(model);
     }
 
-    // POST: /Account/Logout
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()

@@ -32,6 +32,23 @@
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="card shadow-sm h-100">
                         <div class="card-body p-4">
+                            @if (!string.IsNullOrEmpty(friend.ProfileImageKey))
+                            {
+                                <img src="@Url.Action("Image", "Profile",
+                                     new { userId = friend.Id })"
+                                     alt="Profile picture of @friend.DisplayName"
+                                     class="rounded-circle border"
+                                     style="width: 75px; height: 75px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle bg-light border d-flex
+                                    align-items-center justify-content-center"
+                                     style="width: 75px; height: 75px;">
+                                    <i class="bi bi-person fs-3 text-secondary"></i>
+                                </div>
+                            }
+
                             <h5 class="card-title">
                                 @friend.DisplayName
                             </h5>
@@ -70,4 +87,5 @@
             </div>
         </div>
     }
+
 </div>
