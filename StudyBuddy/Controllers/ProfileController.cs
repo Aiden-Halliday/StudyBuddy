@@ -361,4 +361,31 @@ public class ProfileController : Controller
         TempData["SuccessMessage"] = "Skill removed successfully.";
         return RedirectToAction(nameof(Index));
     }
+
+    public async Task<IActionResult> DedicatedProfile(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var model = new ProfileViewModel
+        {
+            UserId = user.Id,
+            DisplayName = user.DisplayName,
+            Bio = user.Bio,
+            ProfileImageKey = user.ProfileImageKey,
+            CreatedUtc = user.CreatedUtc,
+
+            Skills = await _context.UserSkills
+                .Include(us => us.Skill)
+                .Where(us => us.UserId == user.Id)
+                .OrderBy(us => us.Skill.Name)
+                .ToListAsync()
+        };
+
+        return View(model);
+    }
 }

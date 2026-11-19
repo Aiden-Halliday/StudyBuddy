@@ -130,9 +130,11 @@ namespace StudyBuddy.Controllers
 
                 models.Add(new SearchViewModel
                 {
+                    UserId = otherUser.Id,
                     DisplayName = otherUser.DisplayName,
+                    ProfileImageKey = otherUser.ProfileImageKey,
                     Skills = otherUserSkills,
-                    Score = compatibilityResult.Score
+                    Score = compatibilityResult.Score,
                 });
             }
 
