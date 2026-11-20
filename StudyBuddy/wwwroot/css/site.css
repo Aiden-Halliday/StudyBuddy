@@ -20,3 +20,13 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+.profileLink {
+    color: inherit;
+    text-decoration: none;
+}
+
+.profileLink:hover {
+    color: inherit;
+    text-decoration: underline;
+}
