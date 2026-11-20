@@ -24,5 +24,19 @@ namespace StudyBuddy.ViewModels.Profile
         public int SelectedSkillId { get; set; }
 
         public SkillType Type { get; set; } = SkillType.Strength;
+
+        // Reputation properties
+        public int TotalVotes { get; set; }
+
+        public int PositiveVotes { get; set; }
+
+        public bool? CurrentUserVote { get; set; }
+
+        public double? HelpfulPercentage => TotalVotes == 0
+            ? null
+            : Math.Round(
+                100.0 * PositiveVotes / TotalVotes,
+                0,
+                MidpointRounding.AwayFromZero);
     }
 }

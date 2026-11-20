@@ -1,150 +1,191 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudyBuddy.Data;
 using StudyBuddy.Models;
 using StudyBuddy.Services;
 using StudyBuddy.ViewModels.Search;
-using System.Linq;
 
-namespace StudyBuddy.Controllers
+namespace StudyBuddy.Controllers;
+
+[Authorize]
+public class SearchController : Controller
 {
-    public class SearchController : Controller
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _context;
+    private readonly CompatibilityService _compatibilityService;
+
+    public SearchController(
+        UserManager<ApplicationUser> userManager,
+        ApplicationDbContext context,
+        CompatibilityService compatibilityService)
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ApplicationDbContext _context;
-        private readonly CompatibilityService _compatibilityService;
+        _userManager = userManager;
+        _context = context;
+        _compatibilityService = compatibilityService;
+    }
 
-        public SearchController(UserManager<ApplicationUser> userManager, ApplicationDbContext context, CompatibilityService compatibilityService)
+    public async Task<IActionResult> Index()
+    {
+        var results = await BuildResultsAsync(null);
+
+        if (results is null)
+            return NotFound();
+
+        return View(results);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SearchBar(string? searchBarInput)
+    {
+        if (string.IsNullOrWhiteSpace(searchBarInput))
+            return RedirectToAction(nameof(Index));
+
+        var query = searchBarInput.Trim();
+
+        var results = await BuildResultsAsync(query);
+
+        if (results is null)
+            return NotFound();
+
+        ViewData["Query"] = query;
+
+        return View(nameof(Index), results);
+    }
+
+    private async Task<List<SearchViewModel>?> BuildResultsAsync(
+        string? query)
+    {
+        var currentUser = await _userManager.GetUserAsync(User);
+
+        if (currentUser is null)
+            return null;
+
+        var otherUsersQuery = _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id != currentUser.Id);
+
+        if (!string.IsNullOrWhiteSpace(query))
         {
-            _userManager = userManager;
-            _context = context;
-            _compatibilityService = compatibilityService;
+            otherUsersQuery = otherUsersQuery
+                .Where(u => u.DisplayName.Contains(query));
         }
 
-        public async Task<IActionResult> Index()
+        var otherUsers = await otherUsersQuery.ToListAsync();
+
+        var otherUserIds = otherUsers
+            .Select(u => u.Id)
+            .ToList();
+
+        // Get the current student's skills.
+        var currentSkills = await _context.UserSkills
+            .AsNoTracking()
+            .Include(s => s.Skill)
+            .Where(s => s.UserId == currentUser.Id)
+            .ToListAsync();
+
+        // Get the skills of students being considered.
+        var otherSkills = await _context.UserSkills
+            .AsNoTracking()
+            .Include(s => s.Skill)
+            .Where(s => otherUserIds.Contains(s.UserId))
+            .ToListAsync();
+
+        var skillsByUser = otherSkills
+            .GroupBy(s => s.UserId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Load positive and total vote counts per student.
+        var voteCounts = await _context.UserReputationVotes
+            .AsNoTracking()
+            .Where(v => otherUserIds.Contains(v.TargetUserId))
+            .GroupBy(v => v.TargetUserId)
+            .Select(g => new
+            {
+                UserId = g.Key,
+                Total = g.Count(),
+                Positive = g.Count(v => v.IsPositive)
+            })
+            .ToListAsync();
+
+        var votesByUser = voteCounts
+            .ToDictionary(v => v.UserId);
+
+        // Pending friend requests.
+        var pendingUserIds = await _context.FriendRequests
+            .AsNoTracking()
+            .Where(fr =>
+                fr.SenderId == currentUser.Id &&
+                fr.Status == FriendRequestStatus.Pending)
+            .Select(fr => fr.ReceiverId)
+            .ToListAsync();
+
+        // Existing friends.
+        var friendUserIds = await _context.FriendRequests
+            .AsNoTracking()
+            .Where(fr =>
+                fr.Status == FriendRequestStatus.Accepted &&
+                (fr.SenderId == currentUser.Id ||
+                 fr.ReceiverId == currentUser.Id))
+            .Select(fr => fr.SenderId == currentUser.Id
+                ? fr.ReceiverId
+                : fr.SenderId)
+            .ToListAsync();
+
+        var pendingSet = pendingUserIds.ToHashSet();
+        var friendSet = friendUserIds.ToHashSet();
+
+        var results = new List<SearchViewModel>();
+
+        foreach (var otherUser in otherUsers)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var skills = skillsByUser.TryGetValue(
+                otherUser.Id, out var found)
+                ? found
+                : new List<UserSkill>();
 
-            if (user == null)
+            var score = _compatibilityService
+                .Calculate(currentSkills, skills)
+                .Score;
+
+            var hasVotes = votesByUser.TryGetValue(
+                otherUser.Id, out var votes);
+
+            results.Add(new SearchViewModel
             {
-                return NotFound();
-            }
+                UserId = otherUser.Id,
+                DisplayName = otherUser.DisplayName,
+                ProfileImageKey = otherUser.ProfileImageKey,
+                Skills = skills,
 
-            var sentRequestUserIds = await _context.FriendRequests
-                .Where(fr =>
-                    fr.SenderId == user.Id &&
-                    fr.Status == FriendRequestStatus.Pending)
-                .Select(fr => fr.ReceiverId)
-                .ToListAsync();
+                Score = score,
 
-            var friendUserIds = await _context.FriendRequests
-                .Where(fr =>
-                    fr.Status == FriendRequestStatus.Accepted &&
-                    (fr.SenderId == user.Id || fr.ReceiverId == user.Id))
-                .Select(fr => fr.SenderId == user.Id
-                    ? fr.ReceiverId
-                    : fr.SenderId)
-                .ToListAsync();
+                HasSentRequest =
+                    pendingSet.Contains(otherUser.Id),
 
-            var userSkills = await _context.UserSkills
-                .Include(us => us.Skill)
-                .Where(us => us.UserId == user.Id)
-                .OrderBy(us => us.Skill.Name)
-                .ToListAsync();
+                IsFriend =
+                    friendSet.Contains(otherUser.Id),
 
-            var otherUsers = await _context.Users
-                .Where(u => u.Id != user.Id)
-                .ToListAsync();
+                TotalVotes =
+                    hasVotes ? votes!.Total : 0,
 
-            var models = new List<SearchViewModel>();
-
-            foreach (var otherUser in otherUsers)
-            {
-                var otherUserSkills = await _context.UserSkills
-                    .Include(us => us.Skill)
-                    .Where(us => us.UserId == otherUser.Id)
-                    .OrderBy(us => us.Skill.Name)
-                    .ToListAsync();
-
-                var compatibilityResult = _compatibilityService.Calculate(
-                    userSkills,
-                    otherUserSkills);
-
-                var model = new SearchViewModel
-                {
-                    UserId = otherUser.Id,
-                    DisplayName = otherUser.DisplayName,
-                    ProfileImageKey = otherUser.ProfileImageKey,
-                    Skills = otherUserSkills,
-                    Score = compatibilityResult.Score,
-                    HasSentRequest = sentRequestUserIds.Contains(otherUser.Id),
-                    IsFriend = friendUserIds.Contains(otherUser.Id)
-                };
-
-                models.Add(model);
-            }
-
-            models = models
-                .OrderByDescending(m => m.Score)
-                .ToList();
-
-            return View(models);
+                PositiveVotes =
+                    hasVotes ? votes!.Positive : 0
+            });
         }
 
-        public async Task<IActionResult> SearchBar(string searchBarInput)
-        {
-            var user = await _userManager.GetUserAsync(User);
-
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            if (string.IsNullOrWhiteSpace(searchBarInput))
-            {
-                return RedirectToAction("Index");
-            }
-                
-            var userSkills = await _context.UserSkills
-                .Include(us => us.Skill)
-                .Where(us => us.UserId == user.Id)
-                .OrderBy(us => us.Skill.Name)
-                .ToListAsync();
-
-            var otherUsers = await _context.Users
-                .Where(u => u.Id != user.Id && u.DisplayName.Contains(searchBarInput))
-                .ToListAsync();
-
-            var models = new List<SearchViewModel>();
-
-            foreach (var otherUser in otherUsers)
-            {
-                var otherUserSkills = await _context.UserSkills
-                    .Include(us => us.Skill)
-                    .Where(us => us.UserId == otherUser.Id)
-                    .OrderBy(us => us.Skill.Name)
-                    .ToListAsync();
-
-                var compatibilityResult = _compatibilityService.Calculate(userSkills, otherUserSkills);
-
-                models.Add(new SearchViewModel
-                {
-                    UserId = otherUser.Id,
-                    DisplayName = otherUser.DisplayName,
-                    ProfileImageKey = otherUser.ProfileImageKey,
-                    Skills = otherUserSkills,
-                    Score = compatibilityResult.Score,
-                });
-            }
-
-            models = models
-                .OrderByDescending(m => m.Score)
-                .ToList();
-
-            ViewData["Query"] = searchBarInput;
-
-            return View("Index", models);
-        }
+        // Reputation ranking:
+        // 1. Students with votes before unrated students.
+        // 2. Higher helpfulness percentages first.
+        // 3. Compatibility breaks ties.
+        // 4. Display name breaks remaining ties.
+        return results
+            .OrderByDescending(m => m.TotalVotes > 0)
+            .ThenByDescending(m => m.HelpfulPercentage ?? 0)
+            .ThenByDescending(m => m.Score)
+            .ThenBy(m => m.DisplayName)
+            .ToList();
     }
 }
