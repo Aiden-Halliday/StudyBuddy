@@ -70,7 +70,7 @@
                                         </div>
                                     }
 
-                                    <strong>@message.Sender.DisplayName</strong>
+                                    <a asp-controller="Profile" asp-action="DedicatedProfile" asp-route-id="@message.SenderId" class="profileLink"><strong>@message.Sender.DisplayName</strong></a>
                                 </div>
 
                                 <small class="text-muted">
@@ -79,9 +79,7 @@
                             </div>
 
                             <div class="bg-light rounded p-3 mt-1"
-                                 style="white-space: pre-wrap; overflow-wrap: anywhere;">
-                                @message.Content
-                            </div>
+                                 style="white-space: pre-wrap; overflow-wrap: anywhere;">@message.Content</div>
                         </div>
                     }
 
