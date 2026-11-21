@@ -13,5 +13,7 @@
         public string Content { get; set; } = string.Empty;
 
         public DateTime SentUtc { get; set; } = DateTime.UtcNow;
+
+        public ICollection<ChatAttachment> Attachments { get; set; } = new List<ChatAttachment>();
     }
 }
