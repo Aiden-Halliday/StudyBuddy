@@ -140,6 +140,44 @@ namespace StudyBuddy.Tests
             return group.ChatGroupId;
         }
 
+        public async Task SetUserSuspensionAsync(
+            string userId,
+            DateTime? suspendedUntilUtc)
+        {
+            using var scope = Services.CreateScope();
+
+            var context = scope.ServiceProvider
+                .GetRequiredService<ApplicationDbContext>();
+
+            var user = await context.Users
+                .SingleAsync(u => u.Id == userId);
+
+            user.SuspendedUntilUtc = suspendedUntilUtc;
+
+            await context.SaveChangesAsync();
+        }
+        public async Task<int> SeedChatMessageAsync(int groupId)
+        {
+            using var scope = Services.CreateScope();
+
+            var context = scope.ServiceProvider
+                .GetRequiredService<ApplicationDbContext>();
+
+            var message = new ChatMessage
+            {
+                ChatGroupId = groupId,
+                SenderId = "student-2",
+                Content = "This is a test chat message.",
+                SentUtc = DateTime.UtcNow
+            };
+
+            context.ChatMessages.Add(message);
+
+            await context.SaveChangesAsync();
+
+            return message.ChatMessageId;
+        }
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);

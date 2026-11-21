@@ -1,0 +1,465 @@
+﻿@model StudyBuddy.ViewModels.Admin.AdminReportDetailsViewModel
+
+@{
+    ViewData["Title"] = "Report Details";
+}
+
+<div class="container mt-4">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Report Details</h1>
+            <p class="text-muted">
+                Review the information submitted about this message.
+            </p>
+        </div>
+
+        <a asp-controller="Admin"
+           asp-action="Reports"
+           class="btn btn-outline-secondary">
+            Back to Reports
+        </a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Report Information</h5>
+        </div>
+
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Report ID</dt>
+                <dd class="col-sm-9">@Model.MessageReportId</dd>
+
+                <dt class="col-sm-3">Reason</dt>
+                <dd class="col-sm-9">@Model.Reason</dd>
+
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9">
+                    @if (string.IsNullOrWhiteSpace(Model.Description))
+                    {
+                        <span class="text-muted">
+                            No additional explanation provided.
+                        </span>
+                    }
+                    else
+                    {
+                        @Model.Description
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Reported By</dt>
+                <dd class="col-sm-9">@Model.ReporterName</dd>
+
+                <dt class="col-sm-3">Date Submitted</dt>
+                <dd class="col-sm-9">
+                    @Model.CreatedUtc.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")
+                </dd>
+
+                <dt class="col-sm-3">Status</dt>
+                <dd class="col-sm-9">
+                    @switch (Model.Status)
+                    {
+                        case StudyBuddy.Models.MessageReportStatus.Pending:
+                            <span class="badge bg-warning text-dark">
+                                Pending
+                            </span>
+                            break;
+
+                        case StudyBuddy.Models.MessageReportStatus.UnderReview:
+                            <span class="badge bg-info text-dark">
+                                Under Review
+                            </span>
+                            break;
+
+                        case StudyBuddy.Models.MessageReportStatus.Resolved:
+                            <span class="badge bg-success">
+                                Resolved
+                            </span>
+                            break;
+
+                        case StudyBuddy.Models.MessageReportStatus.Dismissed:
+                            <span class="badge bg-secondary">
+                                Dismissed
+                            </span>
+                            break;
+                    }
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Reported Message</h5>
+        </div>
+
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Chat Group</dt>
+                <dd class="col-sm-9">@Model.GroupName</dd>
+
+                <dt class="col-sm-3">Message Sender</dt>
+                <dd class="col-sm-9">@Model.MessageSenderName</dd>
+
+                <dt class="col-sm-3">Message ID</dt>
+                <dd class="col-sm-9">@Model.ChatMessageId</dd>
+
+                <dt class="col-sm-3">Date Sent</dt>
+                <dd class="col-sm-9">
+                    @Model.MessageSentUtc.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")
+                </dd>
+            </dl>
+
+            <hr />
+
+            <h6>Message Content</h6>
+
+            <div class="border rounded p-3 bg-light">
+                @Model.MessageContent
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Review Information</h5>
+        </div>
+
+        <div class="card-body">
+            @if (Model.ReviewedUtc.HasValue)
+            {
+                <dl class="row">
+                    <dt class="col-sm-3">Reviewed By</dt>
+                    <dd class="col-sm-9">
+                        @(Model.ReviewedByName ?? "Unknown")
+                    </dd>
+
+                    <dt class="col-sm-3">Date Reviewed</dt>
+                    <dd class="col-sm-9">
+                        @Model.ReviewedUtc.Value.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")
+                    </dd>
+                </dl>
+            }
+            else
+            {
+                <p class="text-muted mb-0">
+                    This report has not been reviewed yet.
+                </p>
+            }
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Update Report Status</h5>
+        </div>
+
+        <div class="card-body">
+            <form asp-controller="Admin"
+                  asp-action="UpdateReportStatus"
+                  asp-route-id="@Model.MessageReportId"
+                  method="post">
+
+                <div class="mb-3">
+                    <label for="status" class="form-label">
+                        New Status
+                    </label>
+
+                    <select id="status"
+                            name="status"
+                            class="form-select"
+                            required>
+
+                        @foreach (var status in Enum.GetValues<StudyBuddy.Models.MessageReportStatus>())
+                        {
+                            if (status == Model.Status)
+                            {
+                                <option value="@status" selected>
+                                    @status
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="@status">
+                                    @status
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="adminComment" class="form-label">
+                        Administrator Comment
+                    </label>
+
+                    <textarea id="adminComment"
+                              name="adminComment"
+                              class="form-control"
+                              rows="3"
+                              maxlength="1000"
+                              required
+                              placeholder="Explain why you are changing this report's status..."></textarea>
+
+                    <div class="form-text">
+                        A comment is required and will be saved in the moderation audit trail.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Update Status
+                </button>
+            </form>
+        </div>
+    </div>
+
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Moderation Actions</h5>
+        </div>
+
+        <div class="card-body">
+
+            <p class="text-muted">
+                Take action regarding the reported message or its sender.
+                An administrator comment is required for every action.
+            </p>
+
+            @if (!Model.IsMessageDeleted)
+            {
+                <form asp-action="DeleteReportedMessage"
+                      asp-route-id="@Model.MessageReportId"
+                      method="post"
+                      class="mb-4">
+
+                    <h6>Delete Message</h6>
+
+                    <div class="mb-2">
+                        <textarea name="adminComment"
+                                  class="form-control"
+                                  maxlength="1000"
+                                  required
+                                  placeholder="Explain why this message is being deleted..."></textarea>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Delete Message
+                    </button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="RestoreReportedMessage"
+                      asp-route-id="@Model.MessageReportId"
+                      method="post"
+                      class="mb-4">
+
+                    <h6>Restore Message</h6>
+
+                    <div class="mb-2">
+                        <textarea name="adminComment"
+                                  class="form-control"
+                                  maxlength="1000"
+                                  required
+                                  placeholder="Explain why this message is being restored..."></textarea>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-success">
+                        Restore Message
+                    </button>
+                </form>
+            }
+
+            <hr />
+
+            @if (Model.SenderSuspendedUntilUtc.HasValue &&
+                 Model.SenderSuspendedUntilUtc.Value > DateTime.UtcNow)
+            {
+                <h6>Lift User Suspension</h6>
+
+                <p class="text-muted">
+                    This user is currently suspended until
+                    @Model.SenderSuspendedUntilUtc.Value
+                    .ToLocalTime()
+                    .ToString("MMM dd, yyyy h:mm tt").
+                </p>
+
+                <form asp-action="LiftUserSuspension"
+                      asp-route-id="@Model.MessageReportId"
+                      method="post"
+                      class="mb-4">
+
+                    <textarea name="adminComment"
+                              class="form-control mb-2"
+                              maxlength="1000"
+                              required
+                              placeholder="Explain why the suspension is being lifted..."></textarea>
+
+                    <button type="submit"
+                            class="btn btn-warning">
+                        Lift Suspension
+                    </button>
+                </form>
+            }
+            else
+            {
+                <h6>Temporarily Suspend User</h6>
+
+                <form asp-action="SuspendReportedUser"
+                      asp-route-id="@Model.MessageReportId"
+                      method="post"
+                      class="mb-4">
+
+                    <label class="form-label">
+                        Suspension Expiration
+                    </label>
+
+                    <input type="datetime-local"
+                           name="expiresUtc"
+                           class="form-control mb-2"
+                           required />
+
+                    <textarea name="adminComment"
+                              class="form-control mb-2"
+                              maxlength="1000"
+                              required
+                              placeholder="Explain why this user is being suspended..."></textarea>
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Suspend User
+                    </button>
+                </form>
+            }
+
+            <hr />
+
+            <h6>Issue Warning</h6>
+
+            <form asp-action="IssueWarning"
+                  asp-route-id="@Model.MessageReportId"
+                  method="post"
+                  class="mb-4">
+
+                <textarea name="adminComment"
+                          class="form-control mb-2"
+                          maxlength="1000"
+                          required
+                          placeholder="Enter the warning details..."></textarea>
+
+                <button type="submit"
+                        class="btn btn-warning">
+                    Issue Warning
+                </button>
+            </form>
+
+            <hr />
+
+            @if (Model.Status != StudyBuddy.Models.MessageReportStatus.Dismissed)
+            {
+                <h6>Dismiss Report</h6>
+
+                <form asp-action="DismissReport"
+                      asp-route-id="@Model.MessageReportId"
+                      method="post">
+
+                    <textarea name="adminComment"
+                              class="form-control mb-2"
+                              maxlength="1000"
+                              required
+                              placeholder="Explain why this report is being dismissed..."></textarea>
+
+                    <button type="submit"
+                            class="btn btn-secondary">
+                        Dismiss Report
+                    </button>
+                </form>
+            }
+
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Moderation History</h5>
+        </div>
+
+        <div class="card-body">
+
+            @if (Model.ModerationHistory.Any())
+            {
+                @foreach (var action in Model.ModerationHistory)
+                {
+                    <div class="border rounded p-3 mb-3">
+
+                        <div class="d-flex justify-content-between
+                            align-items-center flex-wrap">
+
+                            <h6 class="mb-1">
+                                @action.ActionType
+                            </h6>
+
+                            <small class="text-muted">
+                                @action.CreatedUtc
+                                .ToLocalTime()
+                                .ToString("MMM dd, yyyy h:mm tt")
+                            </small>
+                        </div>
+
+                        <p class="mb-1">
+                            <strong>Administrator:</strong>
+                            @action.AdminName
+                        </p>
+
+                        <p class="mb-1">
+                            <strong>Comment:</strong>
+                            @action.AdminComment
+                        </p>
+
+                        @if (action.ExpiresUtc.HasValue)
+                        {
+                            <p class="mb-0">
+                                <strong>Expiration:</strong>
+                                @action.ExpiresUtc.Value
+                                .ToLocalTime()
+                                .ToString("MMM dd, yyyy h:mm tt")
+                            </p>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted mb-0">
+                    No moderation actions have been recorded for this report yet.
+                </p>
+            }
+        </div>
+    </div>
+
+
+    <a asp-controller="Admin"
+       asp-action="Reports"
+       class="btn btn-outline-secondary mb-4">
+        Back to Reports
+    </a>
+
+</div>

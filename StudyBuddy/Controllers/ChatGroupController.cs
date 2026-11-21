@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using StudyBuddy.Data;
 using StudyBuddy.Models;
 using StudyBuddy.ViewModels.ChatGroup;
+using System.Text.RegularExpressions;
 
 namespace StudyBuddy.Controllers
 {
@@ -304,6 +305,80 @@ namespace StudyBuddy.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReportMessage(ReportMessageViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Please provide a valid report.";
+                return RedirectToAction(nameof(Details), new { id = model.ChatGroupId });
+            }
+
+            var message = await _context.ChatMessages
+                .FirstOrDefaultAsync(m =>
+                    m.ChatMessageId == model.ChatMessageId &&
+                    m.ChatGroupId == model.ChatGroupId);
+
+            if (message == null)
+            {
+                return NotFound();
+            }
+
+            var isMember = await _context.ChatGroupMembers
+                .AnyAsync(m =>
+                    m.ChatGroupId == model.ChatGroupId &&
+                    m.UserId == user.Id);
+
+            if (!isMember)
+            {
+                return Forbid();
+            }
+
+            var alreadyReported = await _context.MessageReports
+                .AnyAsync(r =>
+                    r.ChatMessageId == model.ChatMessageId &&
+                    r.ReporterId == user.Id);
+
+            if (alreadyReported)
+            {
+                TempData["Error"] = "You have already reported this message.";
+                return RedirectToAction(nameof(Details), new { id = model.ChatGroupId });
+            }
+
+            var description = model.Description?.Trim();
+
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                description = null;
+            }
+
+            var report = new MessageReport
+            {
+                ChatMessageId = message.ChatMessageId,
+                ReporterId = user.Id,
+                Reason = model.Reason,
+                Description = description,
+                Status = MessageReportStatus.Pending,
+                CreatedUtc = DateTime.UtcNow
+            };
+
+            _context.MessageReports.Add(report);
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Your report has been submitted successfully.";
+
+            return RedirectToAction(nameof(Details), new { id = model.ChatGroupId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendMessage(int groupId, string content)
         {
             var user = await _userManager.GetUserAsync(User);
@@ -311,6 +386,19 @@ namespace StudyBuddy.Controllers
             if (user == null)
             {
                 return NotFound();
+            }
+
+            // Prevent suspended users from sending messages.
+            if (user.SuspendedUntilUtc.HasValue &&
+                user.SuspendedUntilUtc.Value > DateTime.UtcNow)
+            {
+                TempData["Error"] =
+                    $"Your account is suspended until " +
+                    $"{user.SuspendedUntilUtc.Value.ToLocalTime():g}.";
+
+                return RedirectToAction(
+                    nameof(Details),
+                    new { id = groupId });
             }
 
             var isMember = await _context.ChatGroupMembers

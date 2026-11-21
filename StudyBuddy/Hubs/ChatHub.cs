@@ -75,10 +75,9 @@ namespace StudyBuddy.Hubs
             {
                 throw new HubException(ex.Message);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                throw new HubException(
-                    "You are not a member of this chat group.");
+                throw new HubException(ex.Message);
             }
         }
     }

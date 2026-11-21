@@ -220,6 +220,9 @@ namespace StudyBuddy.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("SuspendedUntilUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
 
@@ -312,6 +315,15 @@ namespace StudyBuddy.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("DeletedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("SenderId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -322,6 +334,8 @@ namespace StudyBuddy.Migrations
                     b.HasKey("ChatMessageId");
 
                     b.HasIndex("ChatGroupId");
+
+                    b.HasIndex("DeletedById");
 
                     b.HasIndex("SenderId");
 
@@ -357,6 +371,92 @@ namespace StudyBuddy.Migrations
                     b.HasIndex("SenderId");
 
                     b.ToTable("FriendRequests");
+                });
+
+            modelBuilder.Entity("StudyBuddy.Models.MessageReport", b =>
+                {
+                    b.Property<int>("MessageReportId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MessageReportId"));
+
+                    b.Property<int>("ChatMessageId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Reason")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReporterId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ReviewedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ReviewedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("MessageReportId");
+
+                    b.HasIndex("ReporterId");
+
+                    b.HasIndex("ReviewedById");
+
+                    b.HasIndex("ChatMessageId", "ReporterId")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "CreatedUtc");
+
+                    b.ToTable("MessageReports");
+                });
+
+            modelBuilder.Entity("StudyBuddy.Models.ModerationAction", b =>
+                {
+                    b.Property<int>("ModerationActionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ModerationActionId"));
+
+                    b.Property<int>("ActionType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AdminComment")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("AdminId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExpiresUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MessageReportId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ModerationActionId");
+
+                    b.HasIndex("AdminId");
+
+                    b.HasIndex("MessageReportId");
+
+                    b.ToTable("ModerationActions");
                 });
 
             modelBuilder.Entity("StudyBuddy.Models.Skill", b =>
@@ -500,6 +600,11 @@ namespace StudyBuddy.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("StudyBuddy.Models.ApplicationUser", "DeletedBy")
+                        .WithMany()
+                        .HasForeignKey("DeletedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("StudyBuddy.Models.ApplicationUser", "Sender")
                         .WithMany()
                         .HasForeignKey("SenderId")
@@ -507,6 +612,8 @@ namespace StudyBuddy.Migrations
                         .IsRequired();
 
                     b.Navigation("ChatGroup");
+
+                    b.Navigation("DeletedBy");
 
                     b.Navigation("Sender");
                 });
@@ -528,6 +635,51 @@ namespace StudyBuddy.Migrations
                     b.Navigation("Receiver");
 
                     b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("StudyBuddy.Models.MessageReport", b =>
+                {
+                    b.HasOne("StudyBuddy.Models.ChatMessage", "ChatMessage")
+                        .WithMany("Reports")
+                        .HasForeignKey("ChatMessageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudyBuddy.Models.ApplicationUser", "Reporter")
+                        .WithMany()
+                        .HasForeignKey("ReporterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudyBuddy.Models.ApplicationUser", "ReviewedBy")
+                        .WithMany()
+                        .HasForeignKey("ReviewedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ChatMessage");
+
+                    b.Navigation("Reporter");
+
+                    b.Navigation("ReviewedBy");
+                });
+
+            modelBuilder.Entity("StudyBuddy.Models.ModerationAction", b =>
+                {
+                    b.HasOne("StudyBuddy.Models.ApplicationUser", "Admin")
+                        .WithMany()
+                        .HasForeignKey("AdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudyBuddy.Models.MessageReport", "MessageReport")
+                        .WithMany("Actions")
+                        .HasForeignKey("MessageReportId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Admin");
+
+                    b.Navigation("MessageReport");
                 });
 
             modelBuilder.Entity("StudyBuddy.Models.UserSkill", b =>
@@ -559,6 +711,16 @@ namespace StudyBuddy.Migrations
                     b.Navigation("Members");
 
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("StudyBuddy.Models.ChatMessage", b =>
+                {
+                    b.Navigation("Reports");
+                });
+
+            modelBuilder.Entity("StudyBuddy.Models.MessageReport", b =>
+                {
+                    b.Navigation("Actions");
                 });
 
             modelBuilder.Entity("StudyBuddy.Models.Skill", b =>

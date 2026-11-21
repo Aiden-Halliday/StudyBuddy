@@ -49,6 +49,23 @@ namespace StudyBuddy.Services
                     "You are not a member of this chat group.");
             }
 
+            var user = await _context.Users
+                .SingleOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException(
+                    "Your user account could not be found.");
+            }
+
+            if (user.SuspendedUntilUtc.HasValue &&
+                user.SuspendedUntilUtc.Value > DateTime.UtcNow)
+            {
+                throw new UnauthorizedAccessException(
+                    $"Your account is suspended until " +
+                    $"{user.SuspendedUntilUtc.Value.ToLocalTime():g}.");
+            }
+
             var message = new ChatMessage
             {
                 ChatGroupId = groupId,

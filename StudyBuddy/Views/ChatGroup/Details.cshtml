@@ -6,6 +6,28 @@
 
 <div class="container mt-4">
 
+    <div id="antiForgeryTokenContainer" class="d-none">
+        @Html.AntiForgeryToken()
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+        </div>
+    }
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2>
@@ -78,8 +100,84 @@
                                 </small>
                             </div>
 
-                            <div class="bg-light rounded p-3 mt-1"
-                                 style="white-space: pre-wrap; overflow-wrap: anywhere;">@message.Content</div>
+                            @if (message.IsDeleted)
+                            {
+                                <div class="bg-light text-muted rounded p-3 mt-1">
+                                    <i class="bi bi-trash me-1"></i>
+                                    This message has been removed by moderation.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="bg-light rounded p-3 mt-1"
+                                     style="white-space: pre-wrap; overflow-wrap: anywhere;">
+                                    @message.Content
+                                </div>
+
+                                <div class="mt-2">
+                                    <details>
+                                        <summary class="text-muted small" style="cursor: pointer;">
+                                            <i class="bi bi-flag me-1"></i>
+                                            Report message
+                                        </summary>
+
+                                        <form asp-controller="ChatGroup"
+                                              asp-action="ReportMessage"
+                                              method="post"
+                                              class="mt-2 p-3 border rounded">
+
+                                            <input type="hidden"
+                                                   name="ChatMessageId"
+                                                   value="@message.ChatMessageId" />
+
+                                            <input type="hidden"
+                                                   name="ChatGroupId"
+                                                   value="@Model.Group.ChatGroupId" />
+
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                       for="reason-@message.ChatMessageId">
+                                                    Reason for reporting
+                                                </label>
+
+                                                <select name="Reason"
+                                                        id="reason-@message.ChatMessageId"
+                                                        class="form-select"
+                                                        required>
+                                                    <option value="" selected disabled>
+                                                        Select a reason...
+                                                    </option>
+                                                    <option value="0">Harassment</option>
+                                                    <option value="1">Spam</option>
+                                                    <option value="2">Inappropriate Content</option>
+                                                    <option value="3">Threats</option>
+                                                    <option value="4">Other</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                       for="description-@message.ChatMessageId">
+                                                    Additional details (optional)
+                                                </label>
+
+                                                <textarea name="Description"
+                                                          id="description-@message.ChatMessageId"
+                                                          class="form-control"
+                                                          rows="2"
+                                                          maxlength="1000"
+                                                          placeholder="Tell us a little more about the issue..."></textarea>
+                                            </div>
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-flag me-1"></i>
+                                                Submit Report
+                                            </button>
+                                        </form>
+                                    </details>
+                                </div>
+                            }
                         </div>
                     }
 

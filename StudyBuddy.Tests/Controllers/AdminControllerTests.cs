@@ -18,7 +18,7 @@ public class AdminControllerTests
     private ApplicationDbContext NewContext() => new(_options);
 
     private AdminController NewController(ApplicationDbContext context) =>
-        new(context, null!);
+    new(context, null!, null!, null!);
 
     [Fact]
     public async Task Index_NoUsers_ReturnsViewWithEmptyList()

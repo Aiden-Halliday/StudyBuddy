@@ -13,5 +13,14 @@
         public string Content { get; set; } = string.Empty;
 
         public DateTime SentUtc { get; set; } = DateTime.UtcNow;
+
+        public bool IsDeleted { get; set; } = false;
+
+        public string? DeletedById { get; set; }
+        public ApplicationUser? DeletedBy { get; set; }
+
+        public DateTime? DeletedUtc { get; set; }
+
+        public ICollection<MessageReport> Reports { get; set; } = new List<MessageReport>();
     }
 }

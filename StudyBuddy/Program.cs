@@ -34,6 +34,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<AdminUserService>();
+builder.Services.AddScoped<IModerationService, ModerationService>();
 
 // Upload configuration is resolved when storage is actually used.
 builder.Services.AddSingleton<IAmazonS3>(sp =>
