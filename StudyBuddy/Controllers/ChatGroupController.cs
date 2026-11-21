@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Amazon.S3;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using StudyBuddy.Data;
+using StudyBuddy.Hubs;
 using StudyBuddy.Models;
+using StudyBuddy.Services;
 using StudyBuddy.ViewModels.ChatGroup;
 
 namespace StudyBuddy.Controllers
@@ -13,13 +17,22 @@ namespace StudyBuddy.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IChatService _chatService;
+        private readonly CloudflareR2Service _r2Service;
+        private readonly IHubContext<ChatHub> _chatHub;
 
         public ChatGroupController(
             ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IChatService chatService,
+            CloudflareR2Service r2Service,
+            IHubContext<ChatHub> chatHub)
         {
             _context = context;
             _userManager = userManager;
+            _chatService = chatService;
+            _r2Service = r2Service;
+            _chatHub = chatHub;
         }
 
         private async Task<bool> AreFriendsAsync(string userId, string otherUserId)
@@ -289,6 +302,7 @@ namespace StudyBuddy.Controllers
 
             var messages = await _context.ChatMessages
                 .Include(m => m.Sender)
+                .Include(m => m.Attachments)
                 .Where(m => m.ChatGroupId == id)
                 .OrderBy(m => m.SentUtc)
                 .ToListAsync();
@@ -350,6 +364,136 @@ namespace StudyBuddy.Controllers
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Details), new { id = groupId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(100 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 100 * 1024 * 1024)]
+        public async Task<IActionResult> UploadAttachments(int groupId, string? content, List<IFormFile> attachments)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var groupExists = await _context.ChatGroups
+                .AnyAsync(g => g.ChatGroupId == groupId);
+
+            if (!groupExists)
+            {
+                return NotFound();
+            }
+
+            var isMember = await _chatService.IsMemberAsync(
+                groupId, user.Id);
+
+            if (!isMember)
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                var message = await _chatService.SendMessageAsync(groupId, user.Id, content ?? string.Empty, attachments);
+
+                // Broadcast the new message and its attachments.
+                await _chatHub.Clients.Group(groupId.ToString())
+                    .SendAsync("ReceiveMessage", new
+                    {
+                        chatMessageId = message.ChatMessageId,
+                        senderId = message.SenderId,
+                        senderName = user.DisplayName,
+                        profileImageUrl =
+                            $"/Profile/Image?userId={Uri.EscapeDataString(user.Id)}",
+                        content = message.Content,
+                        sentUtc = message.SentUtc,
+
+                        attachments = message.Attachments.Select(a => new
+                        {
+                            chatAttachmentId = a.ChatAttachmentId,
+                            fileName = a.FileName,
+                            contentType = a.ContentType,
+                            fileSize = a.FileSize,
+                            url = Url.Action(
+                                nameof(DownloadAttachment),
+                                "ChatGroup",
+                                new { id = a.ChatAttachmentId })
+                        }).ToList()
+                    });
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Message sent successfully."
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (InvalidOperationException)
+            {
+                return StatusCode(500, new
+                {
+                    error = "The attachment upload could not be completed."
+                });
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> DownloadAttachment(int id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var attachment = await _context.ChatAttachments
+                .Include(a => a.ChatMessage)
+                .FirstOrDefaultAsync(a => a.ChatAttachmentId == id);
+
+            if (attachment == null)
+            {
+                return NotFound();
+            }
+
+            var isMember = await _context.ChatGroupMembers
+                .AnyAsync(m =>
+                    m.ChatGroupId == attachment.ChatMessage.ChatGroupId &&
+                    m.UserId == user.Id);
+
+            if (!isMember)
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                using var response = await _r2Service.GetObjectAsync(
+                    attachment.StorageKey);
+
+                var memoryStream = new MemoryStream();
+
+                await response.ResponseStream.CopyToAsync(memoryStream);
+
+                memoryStream.Position = 0;
+
+                return File(memoryStream, attachment.ContentType);
+            }
+            catch (AmazonS3Exception)
+            {
+                return NotFound();
+            }
         }
     }
 }

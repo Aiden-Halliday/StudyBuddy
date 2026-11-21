@@ -19,6 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ChatGroup> ChatGroups { get; set; } = null!;
     public DbSet<ChatGroupMember> ChatGroupMembers { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
+    public DbSet<ChatAttachment> ChatAttachments { get; set; } = null!;
 
     public DbSet<UserReputationVote> UserReputationVotes { get; set; } = null!;
 
@@ -76,5 +77,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 "CK_UserReputationVotes_NoSelfVoting",
                 "[VoterId] <> [TargetUserId]"));
         });
+
+        builder.Entity<ChatAttachment>()
+            .HasOne(a => a.ChatMessage)
+            .WithMany(m => m.Attachments)
+            .HasForeignKey(a => a.ChatMessageId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ChatAttachment>()
+            .HasIndex(a => a.StorageKey)
+            .IsUnique();
     }
 }
