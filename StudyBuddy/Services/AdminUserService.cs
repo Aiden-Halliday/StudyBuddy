@@ -200,6 +200,14 @@ public class AdminUserService
 
                     EnsureSuccess(await _users.DeleteAsync(user));
 
+
+                    await _context.UserReputationVotes
+                        .Where(v =>
+                            v.VoterId == id ||
+                            v.TargetUserId == id)
+                        .ExecuteDeleteAsync();
+
+
                     break;
 
                 default:

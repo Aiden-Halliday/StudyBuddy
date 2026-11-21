@@ -384,6 +384,44 @@ namespace StudyBuddy.Migrations
                     b.ToTable("Skills");
                 });
 
+            modelBuilder.Entity("StudyBuddy.Models.UserReputationVote", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPositive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TargetUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VoterId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetUserId");
+
+                    b.HasIndex("VoterId", "TargetUserId")
+                        .IsUnique();
+
+                    b.ToTable("UserReputationVotes", t =>
+                        {
+                            t.HasCheckConstraint("CK_UserReputationVotes_NoSelfVoting", "[VoterId] <> [TargetUserId]");
+                        });
+                });
+
             modelBuilder.Entity("StudyBuddy.Models.UserSkill", b =>
                 {
                     b.Property<int>("UserSkillId")
@@ -528,6 +566,25 @@ namespace StudyBuddy.Migrations
                     b.Navigation("Receiver");
 
                     b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("StudyBuddy.Models.UserReputationVote", b =>
+                {
+                    b.HasOne("StudyBuddy.Models.ApplicationUser", "TargetUser")
+                        .WithMany()
+                        .HasForeignKey("TargetUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudyBuddy.Models.ApplicationUser", "Voter")
+                        .WithMany()
+                        .HasForeignKey("VoterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("TargetUser");
+
+                    b.Navigation("Voter");
                 });
 
             modelBuilder.Entity("StudyBuddy.Models.UserSkill", b =>

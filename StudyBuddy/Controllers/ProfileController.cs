@@ -362,13 +362,42 @@ public class ProfileController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+
     public async Task<IActionResult> DedicatedProfile(string id)
     {
+        if (string.IsNullOrWhiteSpace(id))
+            return NotFound();
+
         var user = await _userManager.FindByIdAsync(id);
 
         if (user == null)
-        {
             return NotFound();
+
+        // Count all positive and negative votes for this user.
+        var voteCounts = await _context.UserReputationVotes
+            .Where(v => v.TargetUserId == id)
+            .GroupBy(v => v.TargetUserId)
+            .Select(g => new
+            {
+                Total = g.Count(),
+                Positive = g.Count(v => v.IsPositive)
+            })
+            .SingleOrDefaultAsync();
+
+        // Check whether the current student has voted.
+        var currentUserId = _userManager.GetUserId(User);
+
+        bool? currentVote = null;
+
+        if (!string.IsNullOrEmpty(currentUserId) &&
+            currentUserId != id)
+        {
+            currentVote = await _context.UserReputationVotes
+                .Where(v =>
+                    v.VoterId == currentUserId &&
+                    v.TargetUserId == id)
+                .Select(v => (bool?)v.IsPositive)
+                .FirstOrDefaultAsync();
         }
 
         var model = new ProfileViewModel
@@ -379,6 +408,10 @@ public class ProfileController : Controller
             ProfileImageKey = user.ProfileImageKey,
             CreatedUtc = user.CreatedUtc,
 
+            TotalVotes = voteCounts?.Total ?? 0,
+            PositiveVotes = voteCounts?.Positive ?? 0,
+            CurrentUserVote = currentVote,
+
             Skills = await _context.UserSkills
                 .Include(us => us.Skill)
                 .Where(us => us.UserId == user.Id)
@@ -388,4 +421,5 @@ public class ProfileController : Controller
 
         return View(model);
     }
+
 }
