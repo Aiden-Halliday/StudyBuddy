@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using StudyBuddy.Data;
 using StudyBuddy.Models;
 using StudyBuddy.Services;
@@ -147,6 +148,117 @@ namespace StudyBuddy.Tests
 
             Assert.NotNull(message.Sender);
             Assert.Equal("Student One", message.Sender.DisplayName);
+        }
+
+        [Fact]
+        public async Task SendMessageAsync_EmptyContentAndNoAttachments_ThrowsArgumentException()
+        {
+            using var context = CreateContext();
+
+            var (group, user) = await CreateGroupWithMemberAsync(context);
+            var service = new ChatService(context);
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                service.SendMessageAsync(
+                    group.ChatGroupId,
+                    user.Id,
+                    "",
+                    Array.Empty<IFormFile>()));
+
+            Assert.Equal(0, await context.ChatMessages.CountAsync());
+        }
+
+        [Fact]
+        public async Task SendMessageAsync_AttachmentOnlyWithoutR2_ThrowsInvalidOperationException()
+        {
+            using var context = CreateContext();
+
+            var (group, user) = await CreateGroupWithMemberAsync(context);
+            var service = new ChatService(context);
+
+            var file = CreateTestFile("test.png", "image/png");
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                service.SendMessageAsync(
+                    group.ChatGroupId,
+                    user.Id,
+                    "",
+                    new List<IFormFile> { file }));
+
+            Assert.Equal(0, await context.ChatMessages.CountAsync());
+        }
+
+        [Fact]
+        public async Task SendMessageAsync_AttachmentFromNonMember_ThrowsUnauthorizedAccessException()
+        {
+            using var context = CreateContext();
+
+            var (group, _) = await CreateGroupWithMemberAsync(context);
+            var service = new ChatService(context);
+
+            var file = CreateTestFile("test.png", "image/png");
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                service.SendMessageAsync(
+                    group.ChatGroupId,
+                    "not-a-member",
+                    "",
+                    new List<IFormFile> { file }));
+
+            Assert.Equal(0, await context.ChatMessages.CountAsync());
+        }
+
+        [Fact]
+        public async Task SendMessageAsync_MessageOver2000CharactersWithAttachment_ThrowsArgumentException()
+        {
+            using var context = CreateContext();
+
+            var (group, user) = await CreateGroupWithMemberAsync(context);
+            var service = new ChatService(context);
+
+            var content = new string('a', 2001);
+            var file = CreateTestFile("test.png", "image/png");
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                service.SendMessageAsync(
+                    group.ChatGroupId,
+                    user.Id,
+                    content,
+                    new List<IFormFile> { file }));
+
+            Assert.Equal(0, await context.ChatMessages.CountAsync());
+        }
+
+        private IFormFile CreateTestFile(string fileName, string contentType)
+        {
+            byte[] content;
+
+            if (fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                content = new byte[]
+                {
+                    0x89, 0x50, 0x4E, 0x47,
+                    0x0D, 0x0A, 0x1A, 0x0A,
+                    0x00, 0x00, 0x00, 0x00
+                };
+            }
+            else if (fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                content = System.Text.Encoding.ASCII.GetBytes(
+                    "%PDF-1.7 test document");
+            }
+            else
+            {
+                throw new ArgumentException("Unsupported test file.");
+            }
+
+            var stream = new MemoryStream(content);
+
+            return new FormFile(stream, 0, stream.Length, "attachments", fileName)
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = contentType
+            };
         }
     }
 }

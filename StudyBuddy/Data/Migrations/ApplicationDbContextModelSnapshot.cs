@@ -243,6 +243,48 @@ namespace StudyBuddy.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("StudyBuddy.Models.ChatAttachment", b =>
+                {
+                    b.Property<int>("ChatAttachmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChatAttachmentId"));
+
+                    b.Property<int>("ChatMessageId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UploadedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ChatAttachmentId");
+
+                    b.HasIndex("ChatMessageId");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique();
+
+                    b.ToTable("ChatAttachments");
+                });
+
             modelBuilder.Entity("StudyBuddy.Models.ChatGroup", b =>
                 {
                     b.Property<int>("ChatGroupId")
@@ -500,6 +542,17 @@ namespace StudyBuddy.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("StudyBuddy.Models.ChatAttachment", b =>
+                {
+                    b.HasOne("StudyBuddy.Models.ChatMessage", "ChatMessage")
+                        .WithMany("Attachments")
+                        .HasForeignKey("ChatMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChatMessage");
+                });
+
             modelBuilder.Entity("StudyBuddy.Models.ChatGroup", b =>
                 {
                     b.HasOne("StudyBuddy.Models.ApplicationUser", "CreatedBy")
@@ -616,6 +669,11 @@ namespace StudyBuddy.Migrations
                     b.Navigation("Members");
 
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("StudyBuddy.Models.ChatMessage", b =>
+                {
+                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("StudyBuddy.Models.Skill", b =>
