@@ -1,4 +1,3 @@
-﻿
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using StudyBuddy.Models;
@@ -22,6 +21,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ChatAttachment> ChatAttachments { get; set; } = null!;
 
     public DbSet<UserReputationVote> UserReputationVotes { get; set; } = null!;
+
+    public DbSet<MessageReport> MessageReports { get; set; } = null!;
+
+    public DbSet<ModerationAction> ModerationActions { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -55,6 +58,56 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(m => m.SenderId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Entity<MessageReport>()
+           .HasOne(r => r.ChatMessage)
+           .WithMany(m => m.Reports)
+           .HasForeignKey(r => r.ChatMessageId)
+           .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<MessageReport>()
+            .HasOne(r => r.Reporter)
+            .WithMany()
+            .HasForeignKey(r => r.ReporterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<MessageReport>()
+            .HasOne(r => r.ReviewedBy)
+            .WithMany()
+            .HasForeignKey(r => r.ReviewedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<MessageReport>()
+            .HasIndex(r => new
+            {
+                r.ChatMessageId,
+                r.ReporterId
+            })
+            .IsUnique();
+
+        builder.Entity<MessageReport>()
+            .HasIndex(r => new
+            {
+                r.Status,
+                r.CreatedUtc
+            });
+
+        builder.Entity<ModerationAction>()
+            .HasOne(a => a.MessageReport)
+            .WithMany(r => r.Actions)
+            .HasForeignKey(a => a.MessageReportId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ModerationAction>()
+            .HasOne(a => a.Admin)
+            .WithMany()
+            .HasForeignKey(a => a.AdminId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ChatMessage>()
+            .HasOne(m => m.DeletedBy)
+            .WithMany()
+            .HasForeignKey(m => m.DeletedById)
+            .OnDelete(DeleteBehavior.Restrict);
         // Reputation system configuration
         builder.Entity<UserReputationVote>(entity =>
         {

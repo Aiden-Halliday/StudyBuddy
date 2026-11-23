@@ -76,6 +76,8 @@ public class AdminAccessTests : IDisposable
     [InlineData("/Admin/Skills")]
     [InlineData("/Admin/CreateSkill")]
     [InlineData("/Admin/Delete?id=someone")]
+    [InlineData("/Admin/Reports")]
+    [InlineData("/Admin/ReportDetails/1")]
     public async Task Anonymous_IsSentToLogin(string path)
     {
         using var client = Client();
@@ -94,6 +96,8 @@ public class AdminAccessTests : IDisposable
     [InlineData("/Admin/Skills")]
     [InlineData("/Admin/CreateSkill")]
     [InlineData("/Admin/Delete?id=someone")]
+    [InlineData("/Admin/Reports")]
+    [InlineData("/Admin/ReportDetails/1")]
     public async Task Member_IsDeniedEvenUsingDirectUrl(string path)
     {
         await Login(_member, "member@example.com");
@@ -175,6 +179,13 @@ public class AdminAccessTests : IDisposable
     [InlineData("RemoveAdmin")]
     [InlineData("Delete")]
     [InlineData("CreateSkill")]
+    [InlineData("IssueWarning")]
+    [InlineData("DeleteReportedMessage")]
+    [InlineData("RestoreReportedMessage")]
+    [InlineData("SuspendReportedUser")]
+    [InlineData("LiftUserSuspension")]
+    [InlineData("DismissReport")]
+    [InlineData("UpdateReportStatus")]
     public async Task Member_CannotPostAdminActions_WithValidToken(
         string action)
     {

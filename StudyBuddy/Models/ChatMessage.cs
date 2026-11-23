@@ -1,4 +1,4 @@
-﻿namespace StudyBuddy.Models
+namespace StudyBuddy.Models
 {
     public class ChatMessage
     {
@@ -14,6 +14,14 @@
 
         public DateTime SentUtc { get; set; } = DateTime.UtcNow;
 
+        public bool IsDeleted { get; set; } = false;
+
+        public string? DeletedById { get; set; }
+        public ApplicationUser? DeletedBy { get; set; }
+
+        public DateTime? DeletedUtc { get; set; }
+
+        public ICollection<MessageReport> Reports { get; set; } = new List<MessageReport>();
         public ICollection<ChatAttachment> Attachments { get; set; } = new List<ChatAttachment>();
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using StudyBuddy.Data;
 using StudyBuddy.Models;
@@ -19,13 +19,16 @@ namespace StudyBuddy.Tests
         }
 
         private async Task<(ChatGroup group, ApplicationUser user)>
-            CreateGroupWithMemberAsync(ApplicationDbContext context)
+            CreateGroupWithMemberAsync(
+                ApplicationDbContext context,
+                DateTime? suspendedUntilUtc = null)
         {
             var user = new ApplicationUser
             {
                 Id = "user-1",
                 UserName = "student1",
-                DisplayName = "Student One"
+                DisplayName = "Student One",
+                SuspendedUntilUtc = suspendedUntilUtc
             };
 
             context.Users.Add(user);
@@ -149,7 +152,27 @@ namespace StudyBuddy.Tests
             Assert.NotNull(message.Sender);
             Assert.Equal("Student One", message.Sender.DisplayName);
         }
+      
+        [Fact]
+        public async Task SendMessageAsync_ActiveSuspension_ThrowsUnauthorizedAccessException()
+        {
+            using var context = CreateContext();
 
+            var (group, user) = await CreateGroupWithMemberAsync(
+                context,
+                DateTime.UtcNow.AddDays(2));
+
+            var service = new ChatService(context);
+
+            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                () => service.SendMessageAsync(
+                    group.ChatGroupId,
+                    user.Id,
+                    "This message should be blocked."));
+
+            Assert.Contains("suspended", exception.Message);
+        }
+      
         [Fact]
         public async Task SendMessageAsync_EmptyContentAndNoAttachments_ThrowsArgumentException()
         {
@@ -188,6 +211,27 @@ namespace StudyBuddy.Tests
             Assert.Equal(0, await context.ChatMessages.CountAsync());
         }
 
+        [Fact]
+        public async Task SendMessageAsync_ExpiredSuspension_AllowsMessage()
+        {
+            using var context = CreateContext();
+
+            var (group, user) = await CreateGroupWithMemberAsync(
+                context,
+                DateTime.UtcNow.AddDays(-2));
+
+            var service = new ChatService(context);
+
+            var message = await service.SendMessageAsync(
+                group.ChatGroupId,
+                user.Id,
+                "My suspension has expired.");
+
+            Assert.NotNull(message);
+            Assert.Equal("My suspension has expired.", message.Content);
+            Assert.Equal(1, await context.ChatMessages.CountAsync());
+        }
+      
         [Fact]
         public async Task SendMessageAsync_AttachmentFromNonMember_ThrowsUnauthorizedAccessException()
         {

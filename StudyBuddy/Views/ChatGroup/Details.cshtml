@@ -1,10 +1,32 @@
-﻿@model StudyBuddy.ViewModels.ChatGroup.ChatGroupDetailsViewModel
+@model StudyBuddy.ViewModels.ChatGroup.ChatGroupDetailsViewModel
 
 @{
     ViewData["Title"] = Model.Group.Name;
 }
 
 <div class="container mt-4">
+
+    <div id="antiForgeryTokenContainer" class="d-none">
+        @Html.AntiForgeryToken()
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                    aria-label="Close"></button>
+        </div>
+    }
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -74,35 +96,108 @@
                                 </small>
                             </div>
 
-                            <div class="bg-light rounded p-3 mt-1"
-                                 style="white-space: pre-wrap; overflow-wrap: anywhere;">@message.Content</div>
-
-                            @if (message.Attachments.Any())
+                            @if (message.IsDeleted)
                             {
-                                <div class="d-flex flex-wrap gap-2 mt-2">
-                                    @foreach (var attachment in message.Attachments)
-                                    {
-                                        var attachmentUrl = Url.Action(
-                                        "DownloadAttachment",
-                                        "ChatGroup",
-                                        new { id = attachment.ChatAttachmentId });
+                                <div class="bg-light text-muted rounded p-3 mt-1">
+                                    <i class="bi bi-trash me-1"></i>
+                                    This message has been removed by moderation.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="bg-light rounded p-3 mt-1"
+                                 style="white-space: pre-wrap; overflow-wrap: anywhere;">@message.Content</div>
+                          
+                                @if (message.Attachments.Any())
+                                {
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        @foreach (var attachment in message.Attachments)
+                                        {
+                                            var attachmentUrl = Url.Action(
+                                            "DownloadAttachment",
+                                            "ChatGroup",
+                                            new { id = attachment.ChatAttachmentId });
 
-                                        if (attachment.ContentType.StartsWith("image/"))
-                                        {
-                                            <a href="@attachmentUrl" target="_blank">
-                                                <img src="@attachmentUrl"alt="@attachment.FileName" class="img-thumbnail" style="max-width: 180px; max-height: 180px; object-fit: cover;" />
-                                            </a>
+                                            if (attachment.ContentType.StartsWith("image/"))
+                                            {
+                                                <a href="@attachmentUrl" target="_blank">
+                                                    <img src="@attachmentUrl"alt="@attachment.FileName" class="img-thumbnail" style="max-width: 180px; max-height: 180px; object-fit: cover;" />
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a href="@attachmentUrl" target="_blank" class="btn btn-outline-secondary btn-sm"> <i class="bi bi-file-earmark-pdf me-1"></i>@attachment.FileName</a>
+                                            }
                                         }
-                                        else
-                                        {
-                                            <a href="@attachmentUrl" target="_blank" class="btn btn-outline-secondary btn-sm"> <i class="bi bi-file-earmark-pdf me-1"></i>@attachment.FileName</a>
-                                        }
-                                    }
+                                    </div>
+                                }
+
+                                <div class="mt-2">
+                                    <details>
+                                        <summary class="text-muted small" style="cursor: pointer;">
+                                            <i class="bi bi-flag me-1"></i>
+                                            Report message
+                                        </summary>
+
+                                        <form asp-controller="ChatGroup"
+                                              asp-action="ReportMessage"
+                                              method="post"
+                                              class="mt-2 p-3 border rounded">
+
+                                            <input type="hidden"
+                                                   name="ChatMessageId"
+                                                   value="@message.ChatMessageId" />
+
+                                            <input type="hidden"
+                                                   name="ChatGroupId"
+                                                   value="@Model.Group.ChatGroupId" />
+
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                       for="reason-@message.ChatMessageId">
+                                                    Reason for reporting
+                                                </label>
+
+                                                <select name="Reason"
+                                                        id="reason-@message.ChatMessageId"
+                                                        class="form-select"
+                                                        required>
+                                                    <option value="" selected disabled>
+                                                        Select a reason...
+                                                    </option>
+                                                    <option value="0">Harassment</option>
+                                                    <option value="1">Spam</option>
+                                                    <option value="2">Inappropriate Content</option>
+                                                    <option value="3">Threats</option>
+                                                    <option value="4">Other</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label"
+                                                       for="description-@message.ChatMessageId">
+                                                    Additional details (optional)
+                                                </label>
+
+                                                <textarea name="Description"
+                                                          id="description-@message.ChatMessageId"
+                                                          class="form-control"
+                                                          rows="2"
+                                                          maxlength="1000"
+                                                          placeholder="Tell us a little more about the issue..."></textarea>
+                                            </div>
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm">
+                                                <i class="bi bi-flag me-1"></i>
+                                                Submit Report
+                                            </button>
+                                        </form>
+                                    </details>
                                 </div>
                             }
                         </div>
                     }
-
                 </div>
 
                 <div class="card-footer">

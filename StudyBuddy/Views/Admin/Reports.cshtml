@@ -1,0 +1,100 @@
+﻿@model IEnumerable<StudyBuddy.ViewModels.Admin.AdminReportListItemViewModel>
+
+@{
+    ViewData["Title"] = "Message Reports";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Message Reports</h1>
+            <p class="text-muted">
+                Review reports submitted by StudyBuddy users.
+            </p>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            There are currently no message reports to review.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Group</th>
+                        <th>Message Sender</th>
+                        <th>Reported By</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Date Submitted</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var report in Model)
+                    {
+                        <tr>
+                            <td>@report.GroupName</td>
+
+                            <td>@report.MessageSenderName</td>
+
+                            <td>@report.ReporterName</td>
+
+                            <td>
+                                @report.Reason.ToString()
+                            </td>
+
+                            <td>
+                                @switch (report.Status)
+                                {
+                                    case StudyBuddy.Models.MessageReportStatus.Pending:
+                                        <span class="badge bg-warning text-dark">
+                                            Pending
+                                        </span>
+                                        break;
+
+                                    case StudyBuddy.Models.MessageReportStatus.UnderReview:
+                                        <span class="badge bg-info text-dark">
+                                            Under Review
+                                        </span>
+                                        break;
+
+                                    case StudyBuddy.Models.MessageReportStatus.Resolved:
+                                        <span class="badge bg-success">
+                                            Resolved
+                                        </span>
+                                        break;
+
+                                    case StudyBuddy.Models.MessageReportStatus.Dismissed:
+                                        <span class="badge bg-secondary">
+                                            Dismissed
+                                        </span>
+                                        break;
+                                }
+                            </td>
+
+                            <td>
+                                @report.CreatedUtc.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")
+                            </td>
+
+                            <td>
+                                <a asp-controller="Admin"
+                                   asp-action="ReportDetails"
+                                   asp-route-id="@report.MessageReportId"
+                                   class="btn btn-sm btn-primary">
+                                    View Details
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

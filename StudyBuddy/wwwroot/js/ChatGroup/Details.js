@@ -1,4 +1,4 @@
-﻿const messageArea = document.getElementById("messageArea");
+const messageArea = document.getElementById("messageArea");
 const messageForm = document.getElementById("messageForm");
 const messageInput = document.getElementById("messageInput");
 const attachmentInput = document.getElementById("attachmentInput");
@@ -13,8 +13,129 @@ const connection = new signalR.HubConnectionBuilder()
     .withUrl("/chatHub")
     .build();
 
+function createReportForm(message) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "mt-2";
+
+    const details = document.createElement("details");
+
+    const summary = document.createElement("summary");
+    summary.className = "text-muted small";
+    summary.style.cursor = "pointer";
+    summary.textContent = "⚑ Report message";
+
+    const form = document.createElement("form");
+    form.method = "post";
+    form.action = "/ChatGroup/ReportMessage";
+    form.className = "mt-2 p-3 border rounded";
+
+    // Add the antiforgery token
+    const token = document.querySelector(
+        "#antiForgeryTokenContainer input[name='__RequestVerificationToken']"
+    );
+
+    if (token) {
+        const tokenInput = document.createElement("input");
+        tokenInput.type = "hidden";
+        tokenInput.name = "__RequestVerificationToken";
+        tokenInput.value = token.value;
+        form.appendChild(tokenInput);
+    }
+
+    // Identify the message and its group
+    const messageIdInput = document.createElement("input");
+    messageIdInput.type = "hidden";
+    messageIdInput.name = "ChatMessageId";
+    messageIdInput.value = message.chatMessageId;
+
+    const groupIdInput = document.createElement("input");
+    groupIdInput.type = "hidden";
+    groupIdInput.name = "ChatGroupId";
+    groupIdInput.value = groupId;
+
+    form.appendChild(messageIdInput);
+    form.appendChild(groupIdInput);
+
+    // Reason selector
+    const reasonGroup = document.createElement("div");
+    reasonGroup.className = "mb-3";
+
+    const reasonLabel = document.createElement("label");
+    reasonLabel.className = "form-label";
+    reasonLabel.textContent = "Reason for reporting";
+
+    const reasonSelect = document.createElement("select");
+    reasonSelect.name = "Reason";
+    reasonSelect.className = "form-select";
+    reasonSelect.required = true;
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a reason...";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+
+    reasonSelect.appendChild(placeholder);
+
+    const reasons = [
+        { value: 0, text: "Harassment" },
+        { value: 1, text: "Spam" },
+        { value: 2, text: "Inappropriate Content" },
+        { value: 3, text: "Threats" },
+        { value: 4, text: "Other" }
+    ];
+
+    reasons.forEach(function (reason) {
+        const option = document.createElement("option");
+        option.value = reason.value;
+        option.textContent = reason.text;
+        reasonSelect.appendChild(option);
+    });
+
+    reasonGroup.appendChild(reasonLabel);
+    reasonGroup.appendChild(reasonSelect);
+
+    // Optional description
+    const descriptionGroup = document.createElement("div");
+    descriptionGroup.className = "mb-3";
+
+    const descriptionLabel = document.createElement("label");
+    descriptionLabel.className = "form-label";
+    descriptionLabel.textContent = "Additional details (optional)";
+
+    const description = document.createElement("textarea");
+    description.name = "Description";
+    description.className = "form-control";
+    description.rows = 2;
+    description.maxLength = 1000;
+    description.placeholder = "Tell us a little more about the issue...";
+
+    descriptionGroup.appendChild(descriptionLabel);
+    descriptionGroup.appendChild(description);
+
+    // Submit button
+    const submitButton = document.createElement("button");
+    submitButton.type = "submit";
+    submitButton.className = "btn btn-outline-danger btn-sm";
+    submitButton.textContent = "Submit Report";
+
+    form.appendChild(reasonGroup);
+    form.appendChild(descriptionGroup);
+    form.appendChild(submitButton);
+
+    details.appendChild(summary);
+    details.appendChild(form);
+    wrapper.appendChild(details);
+
+    return wrapper;
+}
+
 connection.on("ReceiveMessage", function (message) {
     appendMessage(message);
+});
+
+connection.on("MessageModerationUpdated", function () {
+    window.location.reload();
 });
 
 function scrollToBottom() {
@@ -92,7 +213,7 @@ function appendMessage(message) {
 
         messageContainer.appendChild(content);
     }
-
+  
     // Attachments
     if (message.attachments && message.attachments.length > 0) {
         const attachmentContainer = document.createElement("div");
@@ -140,6 +261,8 @@ function appendMessage(message) {
 
         messageContainer.appendChild(attachmentContainer);
     }
+  
+    messageContainer.appendChild(createReportForm(message));
 
     messageArea.appendChild(messageContainer);
 
