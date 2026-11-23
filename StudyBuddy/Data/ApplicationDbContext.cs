@@ -1,28 +1,26 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using StudyBuddy.Models;
 
 namespace StudyBuddy.Data;
 
-public class ApplicationDbContext
-    : IdentityDbContext<ApplicationUser>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public ApplicationDbContext(
-        DbContextOptions<ApplicationDbContext> options) : base(options)
+        DbContextOptions<ApplicationDbContext> options)
+        : base(options)
     {
     }
 
     public DbSet<Skill> Skills { get; set; } = null!;
-
     public DbSet<UserSkill> UserSkills { get; set; } = null!;
-
     public DbSet<FriendRequest> FriendRequests { get; set; } = null!;
-
     public DbSet<ChatGroup> ChatGroups { get; set; } = null!;
-
     public DbSet<ChatGroupMember> ChatGroupMembers { get; set; } = null!;
-
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
+    public DbSet<ChatAttachment> ChatAttachments { get; set; } = null!;
+
+    public DbSet<UserReputationVote> UserReputationVotes { get; set; } = null!;
 
     public DbSet<MessageReport> MessageReports { get; set; } = null!;
 
@@ -110,5 +108,37 @@ public class ApplicationDbContext
             .WithMany()
             .HasForeignKey(m => m.DeletedById)
             .OnDelete(DeleteBehavior.Restrict);
+        // Reputation system configuration
+        builder.Entity<UserReputationVote>(entity =>
+        {
+            // A student can only vote once on another student.
+            entity.HasIndex(v => new { v.VoterId, v.TargetUserId })
+                .IsUnique();
+
+            entity.HasOne(v => v.Voter)
+                .WithMany()
+                .HasForeignKey(v => v.VoterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(v => v.TargetUser)
+                .WithMany()
+                .HasForeignKey(v => v.TargetUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Prevent self-voting at database level.
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_UserReputationVotes_NoSelfVoting",
+                "[VoterId] <> [TargetUserId]"));
+        });
+
+        builder.Entity<ChatAttachment>()
+            .HasOne(a => a.ChatMessage)
+            .WithMany(m => m.Attachments)
+            .HasForeignKey(a => a.ChatMessageId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ChatAttachment>()
+            .HasIndex(a => a.StorageKey)
+            .IsUnique();
     }
 }

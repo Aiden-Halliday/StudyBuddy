@@ -68,7 +68,15 @@ namespace StudyBuddy.Hubs
                         senderName = message.Sender.DisplayName,
                         profileImageUrl = $"/Profile/Image?userId={Uri.EscapeDataString(message.SenderId)}",
                         content = message.Content,
-                        sentUtc = message.SentUtc
+                        sentUtc = message.SentUtc,
+
+                        attachments = message.Attachments.Select(a => new
+                        {
+                            chatAttachmentId = a.ChatAttachmentId,
+                            fileName = a.FileName,
+                            contentType = a.ContentType,
+                            fileSize = a.FileSize
+                        })
                     });
             }
             catch (ArgumentException ex)

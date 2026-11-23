@@ -1,4 +1,4 @@
-﻿@model StudyBuddy.ViewModels.ChatGroup.ChatGroupDetailsViewModel
+@model StudyBuddy.ViewModels.ChatGroup.ChatGroupDetailsViewModel
 
 @{
     ViewData["Title"] = Model.Group.Name;
@@ -77,12 +77,8 @@
                                 <div class="d-flex align-items-center gap-2">
                                     @if (!string.IsNullOrEmpty(message.Sender.ProfileImageKey))
                                     {
-                                        <img src="@Url.Action("Image", "Profile",
-                                                             new { userId = message.SenderId })"
-                                     alt="@message.Sender.DisplayName"
-                                     class="rounded-circle"
-                                     style="width: 35px; height: 35px; object-fit: cover;" />
-                                                                }
+                                        <img src="@Url.Action("Image", "Profile", new { userId = message.SenderId })" alt="@message.Sender.DisplayName" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;" />
+                                    }
                                     else
                                     {
                                         <div class="rounded-circle bg-light border d-flex
@@ -110,9 +106,31 @@
                             else
                             {
                                 <div class="bg-light rounded p-3 mt-1"
-                                     style="white-space: pre-wrap; overflow-wrap: anywhere;">
-                                    @message.Content
-                                </div>
+                                 style="white-space: pre-wrap; overflow-wrap: anywhere;">@message.Content</div>
+                          
+                                @if (message.Attachments.Any())
+                                {
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        @foreach (var attachment in message.Attachments)
+                                        {
+                                            var attachmentUrl = Url.Action(
+                                            "DownloadAttachment",
+                                            "ChatGroup",
+                                            new { id = attachment.ChatAttachmentId });
+
+                                            if (attachment.ContentType.StartsWith("image/"))
+                                            {
+                                                <a href="@attachmentUrl" target="_blank">
+                                                    <img src="@attachmentUrl"alt="@attachment.FileName" class="img-thumbnail" style="max-width: 180px; max-height: 180px; object-fit: cover;" />
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a href="@attachmentUrl" target="_blank" class="btn btn-outline-secondary btn-sm"> <i class="bi bi-file-earmark-pdf me-1"></i>@attachment.FileName</a>
+                                            }
+                                        }
+                                    </div>
+                                }
 
                                 <div class="mt-2">
                                     <details>
@@ -180,7 +198,6 @@
                             }
                         </div>
                     }
-
                 </div>
 
                 <div class="card-footer">
@@ -189,21 +206,40 @@
                          class="alert alert-danger d-none">
                     </div>
 
-                    <form id="messageForm">
-                        <div class="input-group">
+                    <form id="messageForm"
+                          data-upload-url="@Url.Action("UploadAttachments", "ChatGroup")">
+
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-2">
                             <textarea id="messageInput"
                                       class="form-control"
                                       placeholder="Write a message..."
                                       rows="2"
-                                      maxlength="2000"
-                                      required></textarea>
+                                      maxlength="2000"></textarea>
+                        </div>
+
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+                            <div>
+                                <input type="file"
+                                       id="attachmentInput"
+                                       class="form-control form-control-sm"
+                                       accept="image/jpeg,image/png,image/webp,application/pdf"
+                                       multiple />
+
+                                <small class="text-muted">
+                                    Images and PDFs. Maximum 10 MB per file.
+                                </small>
+                            </div>
 
                             <button id="sendButton"
                                     type="submit"
                                     class="btn btn-primary">
-                                <i class="bi bi-send"></i>
+                                <i class="bi bi-send me-1"></i>
                                 Send
                             </button>
+
                         </div>
                     </form>
 
