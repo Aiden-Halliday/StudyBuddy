@@ -1,17 +1,18 @@
-﻿using System.Security.Claims;
-using System.Text.Encodings.Web;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StudyBuddy.Data;
 using StudyBuddy.Models;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
 
 namespace StudyBuddy.Tests
 {
@@ -62,6 +63,17 @@ namespace StudyBuddy.Tests
         {
             builder.UseEnvironment("Testing");
 
+            builder.ConfigureAppConfiguration((context, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["CloudflareR2:BucketName"] = "test-bucket",
+                    ["CloudflareR2:AccessKeyId"] = "test-access-key",
+                    ["CloudflareR2:SecretAccessKey"] = "test-secret-key",
+                    ["CloudflareR2:ServiceUrl"] = "https://example.r2.cloudflarestorage.com"
+                });
+            });
+
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<ApplicationDbContext>();
@@ -76,8 +88,7 @@ namespace StudyBuddy.Tests
                     options.DefaultChallengeScheme = "Test";
                     options.DefaultForbidScheme = "Test";
                 })
-                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                    "Test", options => { });
+                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
             });
         }
 
@@ -160,8 +171,7 @@ namespace StudyBuddy.Tests
         {
             using var scope = Services.CreateScope();
 
-            var context = scope.ServiceProvider
-                .GetRequiredService<ApplicationDbContext>();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             var message = new ChatMessage
             {
